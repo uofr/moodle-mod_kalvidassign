@@ -66,8 +66,9 @@ if ($connection) {
     $host = local_kaltura_get_host();
     $url = new moodle_url("{$host}/p/{$partner_id}/sp/{$partner_id}/ksr/uiconfId/{$sr_unconf_id}");
     $PAGE->requires->js($url, true);
-//    $PAGE->requires->js('/local/kaltura/js/screenrecorder.js', true);
-    
+    if (get_config(KALTURA_PLUGIN_NAME, 'enable_screen_recorder')) {
+        $PAGE->requires->js('/local/kaltura/js/screenrecorder.js', true);
+    }    
     $PAGE->requires->js('/local/kaltura/js/jquery.js', true);
     $PAGE->requires->js('/local/kaltura/js/swfobject.js', true);
     $PAGE->requires->js('/local/kaltura/js/kcwcallback.js', true);
