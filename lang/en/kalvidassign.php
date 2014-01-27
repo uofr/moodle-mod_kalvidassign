@@ -21,7 +21,7 @@
 
 $string['modulenameplural'] = 'Assignments (Media)';
 $string['modulename'] = 'Assignment (Media)';
-$string['modulename_help'] = 'The Media assignment let\'s you create assignments that require students to upload and submit media which are stored on <a href="http://kaltura.cc.uregina.ca" target="_blank">kaltura.cc.uregina.ca</a>. Instructors can grade student submissions and provide feedback.';
+$string['modulename_help'] = 'The Media assignment let\'s you create assignments that require students to upload and submit media which are stored locally on the institution\'s Kaltura CE (<a href="https://kaltura.cc.uregina.ca" target="_blank">kaltura.cc.uregina.ca</a>) server. Instructors can grade student submissions and provide feedback.';
 $string['name'] = 'Name';
 $string['availabledate'] = 'Available from';
 $string['duedate'] = 'Due Date';
