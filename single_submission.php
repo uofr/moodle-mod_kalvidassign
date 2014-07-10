@@ -16,8 +16,7 @@
 /**
  * Kaltura video assignment single submission page
  *
- * @package    mod
- * @subpackage kalvidassign
+ * @package    mod_kalvidassign
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
