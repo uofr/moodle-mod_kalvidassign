@@ -90,7 +90,7 @@ class kalvidassign_singlesubmission_form extends moodleform {
 
 
             $mform->addElement('static', 'description', get_string('submission', 'kalvidassign'),
-                    local_kaltura_get_kdp_code($entryobject, 0, $courseid));
+                    local_kaltura_get_kdp_code($entryobject, 0, $courseid, $session));
 
         } else if (empty($entryobject) && isset($submission->timemodified) && !empty($submission->timemodified)) {
 
