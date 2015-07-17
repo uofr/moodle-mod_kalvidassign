@@ -13,25 +13,29 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Kaltura video assignment language file
+ * Kaltura video assignment language file.
  *
  * @package    mod_kalvidassign
+ * @author     Remote-Learner.net Inc
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @copyright  (C) 2014 Remote Learner.net Inc http://www.remote-learner.net
  */
 
-$string['modulenameplural'] = 'Assignments (Media)';
-$string['modulename'] = 'Assignment (Media)';
-$string['modulename_help'] = 'The Media assignment let\'s you create assignments that require students to upload and submit media which are stored locally on the institution\'s Kaltura CE (<a href="https://kaltura.cc.uregina.ca" target="_blank">kaltura.cc.uregina.ca</a>) server. Instructors can grade student submissions and provide feedback.';
+$string['activity_not_migrated'] = 'This activity has not yet been migrated to use the new Kaltura instance.';
+$string['modulenameplural'] = 'Kaltura Media Assignments';
+$string['modulename'] = 'Kaltura Media Assignment';
+$string['modulename_help'] = 'The Kaltura Media Assignment enables a teacher to create assignments that require students to upload and submit Kaltura videos. Teachers can grade student submissions and provide feedback.';
 $string['name'] = 'Name';
 $string['availabledate'] = 'Available from';
 $string['duedate'] = 'Due Date';
 $string['preventlate'] = 'Prevent late submissions';
 $string['allowdeleting'] = 'Allow resubmitting';
-$string['allowdeleting_help'] = 'If enabled, students may replace submitted media. Whether it is possible to submit after the due date is controlled by the \'Prevent late submissions\' setting';
-$string['emailteachers'] = 'Email alerts to instructors';
-$string['emailteachers_help'] = 'If enabled, instructors receive email notification whenever students add or update an assignment submission. Only instructors who are able to grade the particular assignment are notified. So, for example, if the course uses separate groups, instructors restricted to particular groups won\'t receive notification about students in other groups.';
+$string['allowdeleting_help'] = 'If enabled, students may replace submitted videos. Whether it is possible to submit after the due date is controlled by the \'Prevent late submissions\' setting';
+$string['emailteachers'] = 'Email alerts to teachers';
+$string['emailteachers_help'] = 'If enabled, teachers receive email notification whenever students add or update an assignment submission. Only teachers who are able to grade the particular assignment are notified. So, for example, if the course uses separate groups, teachers restricted to particular groups won\'t receive notification about students in other groups.';
 $string['invalidid'] = 'Invalid ID';
-$string['pluginadministration'] = 'Assignment (Media)';
+$string['invalid_launch_parameters'] = 'Invalid launch parameters';
+$string['pluginadministration'] = 'Kaltura Media Assignment';
 $string['addvideo'] = 'Add media submission';
 $string['submitvideo'] = 'Submit media';
 $string['replacevideo'] = 'Replace media';
@@ -40,8 +44,8 @@ $string['gradesubmission'] = 'Grade submissions';
 $string['numberofsubmissions'] = 'Number of submissions: {$a}';
 $string['assignmentexpired'] = 'Submission cancelled.  The assignment due date has passed';
 $string['assignmentsubmitted'] = 'Success, your assignment has been submitted';
-$string['emptyentryid'] = 'Media assignment was not submitted correctly.  Please try to resubmit.';
-$string['deleteallsubmissions'] = 'Delete all media submissions';
+$string['emptyentryid'] = 'Video assignment was not submitted correctly.  Please try to resubmit.';
+$string['deleteallsubmissions'] = 'Delete all video submissions';
 $string['fullname'] = 'Name';
 $string['grade'] = 'Grade';
 $string['submissioncomment'] = 'Comment';
@@ -57,9 +61,9 @@ $string['submitted'] = 'Submitted';
 $string['pagesize'] = 'Submissions shown per page';
 $string['pagesize_help'] = 'Set the number of assignment to display per page';
 $string['show'] = 'Show';
-$string['show_help'] = "If filter is set to 'All' then all student submissions will be displayed; even if the student didn't submit anything.  If set to 'Require grading' only submissions that has not been graded or submissions that were updated by the student after it was graded will be shown.  If set to 'Submitted' only students who submitted a media assignment.";
+$string['show_help'] = "If filter is set to 'All' then all student submissions will be displayed; even if the student didn't submit anything.  If set to 'Require grading' only submissions that has not been graded or submissions that were updated by the student after it was graded will be shown.  If set to 'Submitted' only students who submitted a video assignment.";
 $string['quickgrade'] = 'Allow quick grade';
-$string['quickgrade_help'] = 'If enabled, multiple assignments can be graded on one page. Add grades and comments then use the "Save all my feedback" button to save all changes for that page.';
+$string['quickgrade_help'] = 'If enabled, multiple assignments can be graded on one page. Add grades and comments then click the "Save all my feedback" button to save all changes for that page.';
 $string['invalidperpage'] = 'Enter a number greater than zero';
 $string['savefeedback'] = 'Save feedback';
 $string['submission'] = 'Submission';
@@ -74,9 +78,9 @@ $string['lastgrade'] = 'Last grade';
 $string['savedchanges'] = 'Changed Saved';
 $string['save'] = 'Save Changes';
 $string['cancel'] = 'Close';
-$string['checkconversionstatus'] = 'Check media conversion status';
-$string['pluginname'] = 'Assignment (Media)';
-$string['video_converting'] = 'The media is still converting. Please check the status of the video at a later time.';
+$string['checkconversionstatus'] = 'Check video conversion status';
+$string['pluginname'] = 'Kaltura Media Assignment';
+$string['video_converting'] = 'The video is still converting.  Please check the status of the video at a later time.';
 $string['emailteachermail'] = '{$a->username} has updated their assignment submission
 for \'{$a->assignment}\' at {$a->timeupdated}
 
@@ -86,10 +90,10 @@ It is available here:
 $string['emailteachermailhtml'] = '{$a->username} has updated their assignment submission
 for <i>\'{$a->assignment}\'  at {$a->timeupdated}</i><br /><br />
 It is <a href="{$a->url}">available on the web site</a>.';
-$string['messageprovider:kalvidassign_updates'] = 'Media assignment notifications';
+$string['messageprovider:kalvidassign_updates'] = 'Kaltura Media assignment notifications';
 $string['video_preview_header'] = 'Submission preview';
-$string['kalvidassign:gradesubmission'] = 'Grade media submissions';
-$string['kalvidassign:addinstance'] = 'Add an Assignment (Media)';
+$string['kalvidassign:gradesubmission'] = 'Grade video submissions';
+$string['kalvidassign:addinstance'] = 'Add a Kaltura Media Assignment';
 $string['kalvidassign:submit'] = 'Submit videos';
 $string['grade_video_not_cache'] = 'This video may still be in the process of converting...';
 $string['noenrolledstudents'] = 'No students are enrolled in the course';
@@ -102,7 +106,12 @@ $string['kalvidassign:screenrecorder'] = 'Screen recorder';
 $string['checkingforjava'] = 'Checking for Java';
 $string['javanotenabled'] = 'Failed to detect Java, please make sure you have the latest version of Java installed and enabled and then try again.';
 $string['cannotdisplaythumbnail'] = 'Unable to display thumbnail';
-$string['noassignments'] = 'No media assignments found in the course';
+$string['noassignments'] = 'No Kaltura video assignments found in the course';
 $string['submitted'] = 'Submitted';
 $string['nosubmission'] = 'No submission';
 $string['nosubmissions'] = 'No submissions';
+$string['viewsubmission'] = 'View submission';
+$string['failedtoinsertsubmission'] = 'Failed to insert submission record.';
+$string['video_thumbnail'] = 'Video thumbnail';
+$string['feedbackfromteacher'] = 'Feedback From Teacher';
+$string['currentgrade'] = 'Current grade in gradebook';
