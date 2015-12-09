@@ -1,4 +1,7 @@
 <?php
+
+// This file is part of Moodle - http://moodle.org/
+//
 // Moodle is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -13,12 +16,10 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Kaltura video assignment restore stepslib script.
- *
- * @package    mod_kalvidassign
- * @author     Remote-Learner.net Inc
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @copyright  (C) 2014 Remote Learner.net Inc http://www.remote-learner.net
+ * @package moodlecore
+ * @subpackage backup-moodle2
+ * @copyright 2010 onwards Eloy Lafuente (stronk7) {@link http://stronk7.com}
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 /**
@@ -26,7 +27,7 @@
  */
 
 /**
- * Structure step to restore one kalvidassign activity.
+ * Structure step to restore one kalvidassign activity
  */
 class restore_kalvidassign_activity_structure_step extends restore_activity_structure_step {
 
@@ -41,7 +42,7 @@ class restore_kalvidassign_activity_structure_step extends restore_activity_stru
             $paths[] = new restore_path_element('kalvidassign_submission', '/activity/kalvidassign/submissions/submission');
         }
 
-        // Return the paths wrapped into standard activity structure.
+        // Return the paths wrapped into standard activity structure
         return $this->prepare_activity_structure($paths);
     }
 
@@ -54,9 +55,9 @@ class restore_kalvidassign_activity_structure_step extends restore_activity_stru
 
         $data->timemodified = $this->apply_date_offset($data->timemodified);
 
-        // insert the kalvidassign record.
+        // insert the kalvidassign record
         $newitemid = $DB->insert_record('kalvidassign', $data);
-        // immediately after inserting "activity" record, call this.
+        // immediately after inserting "activity" record, call this
         $this->apply_activity_instance($newitemid);
     }
 
@@ -76,7 +77,7 @@ class restore_kalvidassign_activity_structure_step extends restore_activity_stru
 
 
     protected function after_execute() {
-        // Add kalvidassign related files, no need to match by itemname (just internally handled context).
+        // Add kalvidassign related files, no need to match by itemname (just internally handled context)
         $this->add_related_files('mod_kalvidassign', 'submission', 'kalvidassign_submission');
     }
 }

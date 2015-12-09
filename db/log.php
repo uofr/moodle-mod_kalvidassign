@@ -1,4 +1,5 @@
 <?php
+
 // Moodle is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -13,20 +14,21 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Kaltura video assignment log script.
+ * Kaltura video assignment logs file
  *
- * @package    mod_kalvidassign
- * @author     Remote-Learner.net Inc
+ * @package    mod
+ * @subpackage kalvidassign
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @copyright  (C) 2014 Remote Learner.net Inc http://www.remote-learner.net
  */
 
 
 defined('MOODLE_INTERNAL') || die();
 
+global $DB;
+
 $logs = array(
-        array('module' => 'kalvidassign', 'action' => 'add', 'mtable' => 'kalvidassign', 'field' => 'name'),
-        array('module' => 'kalvidassign', 'action' => 'update', 'mtable' => 'kalvidassign', 'field' =>' name'),
-        array('module' => 'kalvidassign', 'action' => 'view', 'mtable' => 'kalvidassign', 'field' => 'name'),
-        array('module' => 'kalvidassign', 'action' => 'delete', 'mtable' => 'kalvidassign', 'field' => 'name')
+    array('module'=>'kalvidassign', 'action'=>'add', 'mtable'=>'kalvidassign', 'field'=>'name'),
+    array('module'=>'kalvidassign', 'action'=>'update', 'mtable'=>'kalvidassign', 'field'=>'name'),
+    array('module'=>'kalvidassign', 'action'=>'view', 'mtable'=>'kalvidassign', 'field'=>'name'),
+    array('module'=>'kalvidassign', 'action'=>'delete', 'mtable'=>'kalvidassign', 'field'=>'name'),  // Currently not being used
 );

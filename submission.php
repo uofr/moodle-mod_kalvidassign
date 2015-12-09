@@ -1,4 +1,5 @@
 <?php
+
 // Moodle is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -13,34 +14,24 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Kaltura video assignment submission script.
+ * Kaltura video assignment form
  *
- * @package    mod_kalvidassign
- * @author     Remote-Learner.net Inc
+ * @package    mod
+ * @subpackage kalvidassign
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @copyright  (C) 2014 Remote Learner.net Inc http://www.remote-learner.net
  */
 
-require_once(dirname(dirname(dirname(__FILE__))).'/config.php');
-require_once(dirname(__FILE__).'/locallib.php');
+require_once(dirname(dirname(dirname(__FILE__))) . '/config.php');
+require_once(dirname(__FILE__) . '/locallib.php');
 
 if (!confirm_sesskey()) {
     print_error('confirmsesskeybad', 'error');
 }
 
-$entryid = required_param('entry_id', PARAM_TEXT);
-$source = required_param('source', PARAM_URL);
-$cmid  = required_param('cmid', PARAM_INT);
-$width  = required_param('width', PARAM_TEXT);
-$height  = required_param('height', PARAM_TEXT);
-$metadata  = required_param('metadata', PARAM_TEXT);
+$entry_id       = required_param('entry_id', PARAM_TEXT);
+$cmid           = required_param('cmid', PARAM_INT);
 
 global $USER, $OUTPUT, $DB, $PAGE;
-
-$urlparts = parse_url($source);
-if (!empty($urlparts['path'])) {
-    $source = 'http://'.KALTURA_URI_TOKEN.$urlparts['path'];
-}
 
 if (! $cm = get_coursemodule_from_id('kalvidassign', $cmid)) {
     print_error('invalidcoursemodule');
@@ -62,28 +53,24 @@ $PAGE->set_heading($course->fullname);
 
 
 if (kalvidassign_assignemnt_submission_expired($kalvidassignobj)) {
-    print_error('assignmentexpired', 'kalvidassign', 'course/view.php?id='.$course->id);
+    print_error('assignmentexpired', 'kalvidassign', 'course/view.php?id='. $course->id);
 }
 
 echo $OUTPUT->header();
 
-if (empty($entryid)) {
-    print_error('emptyentryid', 'kalvidassign', new moodle_url('/mod/kalvidassign/view.php', array('id' => $cm->id)));
+if (empty($entry_id)) {
+    print_error('emptyentryid', 'kalvidassign', $CFG->wwwroot . '/mod/kalvidassign/view.php?id='.$cm->id);
 }
 
 $param = array('vidassignid' => $kalvidassignobj->id, 'userid' => $USER->id);
 $submission = $DB->get_record('kalvidassign_submission', $param);
 
 $time = time();
-$url = new moodle_url('/mod/kalvidassign/view.php', array('id' => $cm->id));
 
 if ($submission) {
-    $submission->entry_id = $entryid;
-    $submission->source = $source;
-    $submission->width = $width;
-    $submission->height = $height;
+
+    $submission->entry_id = $entry_id;
     $submission->timemodified = $time;
-    $submission->metadata = $metadata;
 
     if (0 == $submission->timecreated) {
         $submission->timecreated = $time;
@@ -98,23 +85,22 @@ if ($submission) {
 
         echo html_writer::start_tag('center');
 
+        $url = new moodle_url($CFG->wwwroot . '/mod/kalvidassign/view.php', array('id' => $cm->id));
+
         echo $OUTPUT->single_button($url, $continue, 'post');
         echo html_writer::end_tag('center');
 
+        add_to_log($course->id, 'kalvidassign', 'submit', 'view.php?id='.$cm->id, $kalvidassignobj->id, $cm->id);
     } else {
-        notice(get_string('failedtoinsertsubmission', 'kalvidassign'), $url, $course);
+        // TODO: print error message of failure to insert a new submission
     }
 
 } else {
     $submission = new stdClass();
-    $submission->entry_id = $entryid;
+    $submission->entry_id = $entry_id;
     $submission->userid = $USER->id;
     $submission->vidassignid = $kalvidassignobj->id;
     $submission->grade = -1;
-    $submission->source = $source;
-    $submission->width = $width;
-    $submission->height = $height;
-    $submission->metadata = $metadata;
     $submission->timecreated = $time;
     $submission->timemodified = $time;
 
@@ -125,13 +111,16 @@ if ($submission) {
 
         echo $OUTPUT->notification($message, 'notifysuccess');
 
+        //$param = array('id' => $cm->id);
         echo html_writer::start_tag('center');
+
+        $url = new moodle_url($CFG->wwwroot . '/mod/kalvidassign/view.php', array('id' => $cm->id));
 
         echo $OUTPUT->single_button($url, $continue, 'post');
         echo html_writer::end_tag('center');
 
     } else {
-        notice(get_string('failedtoinsertsubmission', 'kalvidassign'), $url, $course);
+        //TODO: print error message of failure to insert a new submission
     }
 
 }

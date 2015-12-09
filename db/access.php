@@ -1,4 +1,5 @@
 <?php
+
 // Moodle is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -13,12 +14,12 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Kaltura video assignment access script.
+ * Kaltura video assignment capability definition
  *
- * @package    mod_kalvidassign
- * @author     Remote-Learner.net Inc
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @copyright  (C) 2014 Remote Learner.net Inc http://www.remote-learner.net
+ * @package mod
+ * @subpackage kalvidassign
+ * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ *
  */
 
 $capabilities = array(
@@ -52,4 +53,12 @@ $capabilities = array(
             'student' => CAP_ALLOW
         )
     ),
+    
+    'mod/kalvidassign:screenrecorder' => array(
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_MODULE,
+        'archetypes' => array(
+            'student' => CAP_ALLOW,
+        )
+   )
 );

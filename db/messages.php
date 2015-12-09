@@ -1,4 +1,7 @@
 <?php
+
+// This file is part of Moodle - http://moodle.org/
+//
 // Moodle is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -13,14 +16,17 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Kaltura video assignment messages script.
+ * Defines message providers (types of messages being sent)
  *
- * @package    mod_kalvidassign
- * @author     Remote-Learner.net Inc
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @copyright  (C) 2014 Remote Learner.net Inc http://www.remote-learner.net
+ * @package mod-kalvidassign
+ * @copyright  2010 onwards  Aparup Banerjee  http://moodle.com
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-$messageproviders = array(
-    'kalvidassign_updates' => array()
+$messageproviders = array (
+
+/// assignment submissions
+    'kalvidassign_updates' => array (
+    )
+
 );
