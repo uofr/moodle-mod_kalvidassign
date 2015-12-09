@@ -106,3 +106,4 @@ $string['noassignments'] = 'No media assignments found in the course';
 $string['submitted'] = 'Submitted';
 $string['nosubmission'] = 'No submission';
 $string['nosubmissions'] = 'No submissions';
+$string['nosubmissionsassign'] = 'No submissions have been made for this assignment';

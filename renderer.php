@@ -787,7 +787,7 @@ class mod_kalvidassign_renderer extends plugin_renderer_base {
 
 
         if (empty($users)) {
-            echo html_writer::tag('p', get_string('noenrolledstudents', 'kalvidassign'));
+            echo html_writer::tag('p', get_string('nosubmissionsassign', 'kalvidassign'));
             return;
         }
 
