@@ -83,7 +83,9 @@ class kalvidassign_singlesubmission_form extends moodleform {
 
         if (!empty($entryobject)) {
             list($entryobject->width, $entryobject->height) = kalvidassign_get_player_dimensions();
-            $courseid = get_courseid_from_context($this->_customdata->context);
+            // deprecated: get_courseid_from_context();
+            // $courseid = get_courseid_from_context($this->_customdata->context);
+            $courseid = $this->_customdata->context->get_course_context()->instanceid;
 
             // Set the session
             $session = local_kaltura_generate_kaltura_session(array($entryobject->id));
