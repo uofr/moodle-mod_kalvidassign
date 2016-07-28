@@ -193,7 +193,7 @@ if (!has_capability('mod/kalvidassign:gradesubmission', $context)) {
         )
     );
 
-    $courseid               = $course->id; // deprecated: get_courseid_from_context($PAGE->context);
+    $courseid               = $COURSE->id; // deprecated: get_courseid_from_context($PAGE->context);
     $conversion_script      = '';
     $kcw                    = local_kaltura_get_kcw('assign_uploader', true);
     $markup                 = $renderer->display_all_panel_markup();
