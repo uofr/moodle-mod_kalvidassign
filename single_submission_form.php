@@ -183,7 +183,7 @@ class kalvidassign_singlesubmission_form extends moodleform {
 
         }
 
-        $mform->addElement('static', 'finalgrade', get_string('currentgrade', 'assignment').':' ,$grade);
+        $mform->addElement('static', 'finalgrade', get_string('currentgrade', 'assign').':' ,$grade);
         $mform->setType('finalgrade', PARAM_INT);
 
         /* Feedback section */
