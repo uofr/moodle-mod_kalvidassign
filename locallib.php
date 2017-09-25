@@ -271,7 +271,9 @@ function kalvidassign_email_teachers($cm, $name, $submission, $context) {
  */
 function kalvidassign_get_graders($cm, $user, $context) {
     //potential graders
-    $potgraders = get_users_by_capability($context, 'mod/kalvidassign:gradesubmission', '', '', '', '', '', '', false, false);
+    //$potgraders = get_users_by_capability($context, 'mod/kalvidassign:gradesubmission', '', '', '', '', '', '', false, false);
+	// should be fixed - https://github.com/remotelearner/moodle-mod_kalvidassign/issues/9
+	$potgraders = get_enrolled_users($context, "mod/kalvidassign:gradesubmission", null, 'u.*', null, null, null, true);
 
     $graders = array();
     if (groups_get_activity_groupmode($cm) == SEPARATEGROUPS) {   // Separate groups are being used
