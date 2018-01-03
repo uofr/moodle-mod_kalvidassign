@@ -1,5 +1,6 @@
 <?php
-
+// This file is part of Moodle - http://moodle.org/
+//
 // Moodle is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -17,22 +18,34 @@
  * Kaltura video assignment single submission form
  *
  * @package    mod_kalvidassign
+ * @copyright  (C) 2016-2017 Yamaguchi University <gh-cc@mlex.cc.yamaguchi-u.ac.jp>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+require_once(dirname(dirname(dirname(__FILE__))) . '/config.php');
+require_once(dirname(dirname(dirname(__FILE__))) . '/course/moodleform_mod.php');
+require_once(dirname(dirname(dirname(__FILE__))) . '/local/kaltura/locallib.php');
+
 if (!defined('MOODLE_INTERNAL')) {
-    die('Direct access to this script is forbidden.');    ///  It must be included from a Moodle page
+    // It must be included from a Moodle page.
+    die('Direct access to this script is forbidden.');
 }
 
 require_once(dirname(dirname(dirname(__FILE__))) . '/course/moodleform_mod.php');
 
+/**
+ * Class for display single submission form.
+ * @package   mod_kalvidassign
+ * @copyright (C) 2016-2017 Yamaguchi University <gh-cc@mlex.cc.yamaguchi-u.ac.jp>
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
 class kalvidassign_singlesubmission_form extends moodleform {
 
     /**
-     * This function defines the forums elments that are to be displayed
+     * This function defines the forums elements that are to be displayed.
      */
     public function definition() {
-        global $CFG, $PAGE;
+        global $CFG;
 
         $mform =& $this->_form;
 
@@ -63,13 +76,12 @@ class kalvidassign_singlesubmission_form extends moodleform {
         $submission     = $this->_customdata->submission;
         $grading_info   = $this->_customdata->grading_info;
         $entryobject   = '';
-        $timemodified   = '';
 
         if (!empty($submission->entry_id)) {
 
             $kaltura        = new kaltura_connection();
             $connection     = $kaltura->get_connection(true, KALTURA_SESSION_LENGTH);
-            
+
             if ($connection) {
                 $entryobject = local_kaltura_get_ready_entry_object($this->_customdata->submission->entry_id);
     
@@ -82,22 +94,35 @@ class kalvidassign_singlesubmission_form extends moodleform {
         }
 
         if (!empty($entryobject)) {
-            list($entryobject->width, $entryobject->height) = kalvidassign_get_player_dimensions();
-            // deprecated: get_courseid_from_context();
-            // $courseid = get_courseid_from_context($this->_customdata->context);
-            $courseid = $this->_customdata->context->get_course_context()->instanceid;
 
             // Set the session
             $session = local_kaltura_generate_kaltura_session(array($entryobject->id));
 
+            // Determine if the mobile theme is being used.
+            $theme = core_useragent::get_device_type_theme();
 
-            $mform->addElement('static', 'description', get_string('submission', 'kalvidassign'),
-                    local_kaltura_get_kdp_code($entryobject, 0, $courseid, $session));
+            // Get uiconfid for presentation.
+            $uiconfid = local_kaltura_get_player_uiconf('player_resource');
+
+            $markup = '';
+
+            if (KalturaMediaType::IMAGE == $entryobject->mediaType) {
+                $markup = local_kaltura_create_image_markup($entryobject, $entryobject->name, $theme);
+            } else {
+                list($entryobject->width, $entryobject->height) = kalvidassign_get_player_dimensions();
+                if (0 == strcmp($theme, 'mymobile')) {
+                        $markup = local_kaltura_get_kwidget_code($entryobject, $uiconfid, $session);
+                } else {
+                    $markup = local_kaltura_get_kdp_code($entryobject, $uiconfid, $session);
+                }
+            }
+
+            $mform->addElement('static', 'description', get_string('submission', 'kalvidassign'), $markup);
 
         } else if (empty($entryobject) && isset($submission->timemodified) && !empty($submission->timemodified)) {
 
             if ($connection) {
-                // an empty entry object and a time modified timestamp means the video is still converting
+                // An empty entry object and a time modified timestamp means the video is still converting
                 $mform->addElement('static', 'description', get_string('submission', 'kalvidassign'),
                                    get_string('video_converting', 'local_kaltura'));
             } else {
@@ -127,9 +152,11 @@ class kalvidassign_singlesubmission_form extends moodleform {
         $mform->addElement('select', 'xgrade', get_string('grade').':', $grademenu, $attributes);
 
         if (isset($submission->grade)) {
-            $mform->setDefault('xgrade', $this->_customdata->submission->grade ); //@fixme some bug when element called 'grade' makes it break
+            // Fixme some bug when element called 'grade' makes it break.
+            $mform->setDefault('xgrade', $this->_customdata->submission->grade );
         } else {
-            $mform->setDefault('xgrade', '-1' ); //@fixme some bug when element called 'grade' makes it break
+            // Fixme some bug when element called 'grade' makes it break.
+            $mform->setDefault('xgrade', '-1' );
         }
 
         $mform->setType('xgrade', PARAM_INT);
@@ -168,7 +195,7 @@ class kalvidassign_singlesubmission_form extends moodleform {
 
                 $grade = ' - ';
 
-            } elseif (0 != strcmp('-', $grading_info->items[0]->grades[$this->_customdata->userid]->str_grade)) {
+            } else if (0 != strcmp('-', $grading_info->items[0]->grades[$this->_customdata->userid]->str_grade)) {
 
                 $grade = '<a href="'.$CFG->wwwroot.'/grade/report/grader/index.php?id='. $this->_customdata->cm->course .'" >'.
                             $this->_customdata->grading_info->items[0]->grades[$this->_customdata->userid]->str_grade . '</a>';
@@ -183,7 +210,7 @@ class kalvidassign_singlesubmission_form extends moodleform {
 
         }
 
-        $mform->addElement('static', 'finalgrade', get_string('currentgrade', 'assign').':' ,$grade);
+        $mform->addElement('static', 'finalgrade', get_string('currentgrade', 'kalvidassign').':' ,$grade);
         $mform->setType('finalgrade', PARAM_INT);
 
         /* Feedback section */
@@ -212,10 +239,13 @@ class kalvidassign_singlesubmission_form extends moodleform {
                            $this->_customdata->markingteacherpic,
                            $this->_customdata->markingteacherinfo);
 
-
         $this->add_action_buttons();
     }
 
+    /**
+     * This function defines the forums elements that are to be displayed.
+     * @param object $data - submission object.
+     */
     public function set_data($data) {
 
         if (!isset($data->submission->format)) {
@@ -224,20 +254,22 @@ class kalvidassign_singlesubmission_form extends moodleform {
             $data->textformat = $data->submission->format;
         }
 
-        $editoroptions = $this->get_editor_options();
+        $data->editor_options = $this->get_editor_options();
 
         return parent::set_data($data);
 
     }
 
+    /**
+     * This function defines the forums elements that are to be displayed.
+     * @return array - list of setting data of assignment.
+     */
     protected function get_editor_options() {
 
         $editoroptions = array();
         $editoroptions['component'] = 'mod_kalvidassign';
-        //$editoroptions['filearea'] = 'feedback';
         $editoroptions['noclean'] = false;
-        $editoroptions['maxfiles'] = 0; //TODO: no files for now, we need to first implement assignment_feedback area, integration with gradebook, files support in quickgrading, etc. (skodak)
-        //$editoroptions['maxbytes'] = $this->_customdata->maxbytes;
+        $editoroptions['maxfiles'] = 0;
         $editoroptions['context'] = $this->_customdata->context;
 
         return $editoroptions;

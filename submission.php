@@ -1,5 +1,6 @@
 <?php
-
+// This file is part of Moodle - http://moodle.org/
+//
 // Moodle is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -16,13 +17,18 @@
 /**
  * Kaltura video assignment form
  *
- * @package    mod
- * @subpackage kalvidassign
+ * @package    mod_kalvidassign
+ * @copyright  (C) 2016-2017 Yamaguchi University <gh-cc@mlex.cc.yamaguchi-u.ac.jp>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 require_once(dirname(dirname(dirname(__FILE__))) . '/config.php');
 require_once(dirname(__FILE__) . '/locallib.php');
+
+if (!defined('MOODLE_INTERNAL')) {
+    // It must be included from a Moodle page.
+    die('Direct access to this script is forbidden.');
+}
 
 if (!confirm_sesskey()) {
     print_error('confirmsesskeybad', 'error');
@@ -51,8 +57,9 @@ $PAGE->set_url('/mod/kalvidassign/view.php', array('id' => $course->id));
 $PAGE->set_title(format_string($kalvidassignobj->name));
 $PAGE->set_heading($course->fullname);
 
+require_login();
 
-if (kalvidassign_assignemnt_submission_expired($kalvidassignobj)) {
+if (kalvidassign_assignment_submission_expired($kalvidassignobj) && $kalvidassignobj->preventlate) {
     print_error('assignmentexpired', 'kalvidassign', 'course/view.php?id='. $course->id);
 }
 
@@ -90,11 +97,16 @@ if ($submission) {
         echo $OUTPUT->single_button($url, $continue, 'post');
         echo html_writer::end_tag('center');
 
-        add_to_log($course->id, 'kalvidassign', 'submit', 'view.php?id='.$cm->id, $kalvidassignobj->id, $cm->id);
+        // Write a log.
+        $event = \mod_kalvidassign\event\media_submitted::create(array(
+            'objectid' => $kalvidassignobj->id,
+            'context' => context_module::instance($cm->id),
+            'relateduserid' => $USER->id
+        ));
+        $event->trigger();
     } else {
-        // TODO: print error message of failure to insert a new submission
+         print_error('not_update', 'kalvidassign');
     }
-
 } else {
     $submission = new stdClass();
     $submission->entry_id = $entry_id;
@@ -111,7 +123,6 @@ if ($submission) {
 
         echo $OUTPUT->notification($message, 'notifysuccess');
 
-        //$param = array('id' => $cm->id);
         echo html_writer::start_tag('center');
 
         $url = new moodle_url($CFG->wwwroot . '/mod/kalvidassign/view.php', array('id' => $cm->id));
@@ -120,9 +131,8 @@ if ($submission) {
         echo html_writer::end_tag('center');
 
     } else {
-        //TODO: print error message of failure to insert a new submission
+         print_error('not_insert', 'kalvidassign');
     }
-
 }
 
 $context = $PAGE->context;

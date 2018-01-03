@@ -1,5 +1,6 @@
 <?php
-
+// This file is part of Moodle - http://moodle.org/
+//
 // Moodle is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -17,6 +18,7 @@
  * Kaltura video assignment single submission page
  *
  * @package    mod_kalvidassign
+ * @copyright  (C) 2016-2017 Yamaguchi University <gh-cc@mlex.cc.yamaguchi-u.ac.jp>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -26,6 +28,10 @@ require_once(dirname(__FILE__) . '/renderer.php');
 require_once(dirname(__FILE__) . '/locallib.php');
 require_once(dirname(__FILE__) . '/single_submission_form.php');
 
+if (!defined('MOODLE_INTERNAL')) {
+    // It must be included from a Moodle page.
+    die('Direct access to this script is forbidden.');
+}
 
 $id     = required_param('cmid', PARAM_INT);           // Course Module ID
 $userid = required_param('userid', PARAM_INT);
@@ -65,12 +71,18 @@ $PAGE->navbar->add($prevousurlstring, $previousurl);
 
 require_capability('mod/kalvidassign:gradesubmission', $context);
 
-add_to_log($course->id, 'kalvidassign', 'view submission page', 'single_submission.php?id='.$cm->id, $kalvidassignobj->id, $cm->id);
+// Write a log.
+$event = \mod_kalvidassign\event\submission_detail_viewed::create(array(
+    'objectid' => $kalvidassignobj->id,
+    'context' => context_module::instance($cm->id),
+    'relateduserid' => $userid
+));
+$event->trigger();
 
 // Get a single submission record
 $submission = kalvidassign_get_submission($cm->instance, $userid);
 
-// Get the submission user and the time they submitted the video
+// Get the submission user and the time they submitted the media.
 $param = array('id' => $userid);
 $user  = $DB->get_record('user', $param);
 
@@ -85,7 +97,7 @@ $submissionuserinfo = fullname($user);
 $grading_info    = grade_get_grades($cm->course, 'mod', 'kalvidassign', $cm->instance, array($userid));
 $gradingdisabled = $grading_info->items[0]->grades[$userid]->locked || $grading_info->items[0]->grades[$userid]->overridden;
 
-// Get marking teacher information and the time the submission was marked
+// Get marking teacher information and the time the submission was marked.
 $teacher = '';
 if (!empty($submission)) {
     $datestring_late     = kalvidassign_display_lateness($submission->timemodified, $kalvidassignobj->timedue);
@@ -106,7 +118,12 @@ if (!empty($teacher)) {
     $markingtreacherinfo = fullname($teacher).'<br />'.$datestring;
 }
 
-// Setup form data
+$comment = '';
+if ($submission != null) {
+    $comment = $submission->submissioncomment;
+}
+
+// Setup form data.
 $formdata                           = new stdClass();
 $formdata->submissionuserpic        = $submissionuserpic;
 $formdata->submissionuserinfo       = $submissionuserinfo;
@@ -120,7 +137,7 @@ $formdata->cminstance               = $kalvidassignobj;
 $formdata->submission               = $submission;
 $formdata->userid                   = $userid;
 $formdata->enableoutcomes           = $CFG->enableoutcomes;
-$formdata->submissioncomment_editor = array('text'=> $submission->submissioncomment, 'format'=>FORMAT_HTML);
+$formdata->submissioncomment_editor = array('text' => $comment, 'format' => FORMAT_HTML);
 $formdata->tifirst                  = $tifirst;
 $formdata->tilast                   = $tilast;
 $formdata->page                     = $page;
@@ -135,8 +152,10 @@ if ($submissionform->is_cancelled()) {
         isset($submitted_data->xgrade) &&
         isset($submitted_data->submissioncomment_editor)) {
 
-        // Flag used when an instructor is about to grade a user who does not have
-        // a submittion (see KALDEV-126)
+        /*
+         * Flag used when an instructor is about to grade a user who does not have
+         * a submittion (see KALDEV-126).
+         */
         $updategrade = true;
 
         if ($submission) {
@@ -166,7 +185,6 @@ if ($submissionform->is_cancelled()) {
                 $submission = new stdClass();
                 $submission->vidassignid        = $cm->instance;
                 $submission->userid             = $userid;
-                //$submission->entry_id           = $submitted_data->entry_id;
                 $submission->grade              = $submitted_data->xgrade;
                 $submission->submissioncomment  = $submitted_data->submissioncomment_editor['text'];
                 $submission->format             = $submitted_data->submissioncomment_editor['format'];
@@ -175,7 +193,6 @@ if ($submissionform->is_cancelled()) {
 
                 $DB->insert_record('kalvidassign_submission', $submission);
             }
-
 
         }
 
@@ -186,13 +203,17 @@ if ($submissionform->is_cancelled()) {
 
             kalvidassign_grade_item_update($kalvidassignobj, $gradeobj);
 
-            //add to log
-            add_to_log($kalvidassignobj->course, 'kalvidassign', 'update grades',
-                       'grade_submissions.php?cmid='.$cm->id, $cm->id);
+            // Write a log.
+            $event = \mod_kalvidassign\event\grades_updated::create(array(
+                'objectid' => $kalvidassignobj->id,
+                'context' => context_module::instance($cm->id),
+                'relateduserid' => $userid
+            ));
+            $event->trigger();
 
         }
 
-        // Handle outcome data
+        // Handle outcome data.
         if (!empty($CFG->enableoutcomes)) {
             require_once($CFG->libdir.'/gradelib.php');
 
@@ -229,7 +250,7 @@ $result = local_kaltura_login(true, '');
 if ($result) {
 
     if (local_kaltura_has_mobile_flavor_enabled() && local_kaltura_get_enable_html5()) {
-        $uiconf_id = local_kaltura_get_player_uiconf('presentation');
+        $uiconf_id = local_kaltura_get_player_uiconf('player_resource');
         $url = new moodle_url(local_kaltura_htm5_javascript_url($uiconf_id));
         $PAGE->requires->js($url, true);
         $PAGE->requires->js('/local/kaltura/js/frameapi.js', true);

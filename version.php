@@ -1,5 +1,6 @@
 <?php
-
+// This file is part of Moodle - http://moodle.org/
+//
 // Moodle is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -18,16 +19,15 @@
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-if (!defined('MOODLE_INTERNAL')) {
-    die('Direct access to this script is forbidden.');    ///  It must be included from a Moodle page
-}
+defined('MOODLE_INTERNAL') || die();
 
-$plugin->version = 2014010901;
 $plugin->component = 'mod_kalvidassign';
-$plugin->release = 'Kaltura release 3.1.02 (RL: 2.6.1.1)';
-$plugin->requires = 2013111800;
-$plugin->cron = 0;
+$plugin->version = 2018010200;
+$plugin->release = 'Kaltura Media Assignment 1.1.1';
+$plugin->requires = 2015051100;
 $plugin->maturity = MATURITY_STABLE;
+$plugin->cron = 0;
 $plugin->dependencies = array(
-    'local_kaltura' => 2014010901
+    'local_kaltura' => 2018010200,
+    'local_mymedia' => 2018010200
 );

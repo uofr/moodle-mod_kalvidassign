@@ -17,13 +17,19 @@
 /**
  * Displays information about all the assignment modules in the requested course
  *
- * @package   mod_kalvidassign
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package    mod_kalvidassign
+ * @copyright  (C) 2016-2017 Yamaguchi University <gh-cc@mlex.cc.yamaguchi-u.ac.jp>
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-require_once("../../config.php");
-require_once($CFG->dirroot.'/local/kaltura/locallib.php');
-require_once($CFG->dirroot.'/mod/kalvidassign/locallib.php');
+require_once(dirname(dirname(dirname(__FILE__))) . '/config.php');
+require_once(dirname(dirname(dirname(__FILE__))) . '/local/kaltura/locallib.php');
+require_once(dirname(__FILE__) . '/locallib.php');
+
+if (!defined('MOODLE_INTERNAL')) {
+    // It must be included from a Moodle page.
+    die('Direct access to this script is forbidden.');
+}
 
 $id = required_param('id', PARAM_INT); // Course ID.
 
@@ -39,6 +45,8 @@ $PAGE->set_pagelayout('incourse');
 $PAGE->navbar->add($strplural);
 $PAGE->set_title($strplural);
 $PAGE->set_heading($course->fullname);
+
+require_login();
 
 echo $OUTPUT->header();
 

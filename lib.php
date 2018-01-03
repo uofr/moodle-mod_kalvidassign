@@ -1,5 +1,6 @@
 <?php
-
+// This file is part of Moodle - http://moodle.org/
+//
 // Moodle is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -16,20 +17,23 @@
 /**
  * Kaltura video assignment library of hooks
  *
- * @package    mod
- * @subpackage kalvidassign
+ * @package    mod_kalvidassign
+ * @copyright  (C) 2016-2017 Yamaguchi University <gh-cc@mlex.cc.yamaguchi-u.ac.jp>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-if (!defined('MOODLE_INTERNAL')) {
-    die('Direct access to this script is forbidden.');    ///  It must be included from a Moodle page
-}
-
-/** Include eventslib.php */
+require_once(dirname(dirname(dirname(__FILE__))) . '/config.php');
+// Include eventslib.php.
 require_once($CFG->libdir.'/eventslib.php');
-/** Include calendar/lib.php */
+// Include calendar/lib.php.
 require_once($CFG->dirroot.'/calendar/lib.php');
 
+if (!defined('MOODLE_INTERNAL')) {
+    // It must be included from a Moodle page.
+    die('Direct access to this script is forbidden.');
+}
+
+require_login();
 
 /**
  * Given an object containing all the necessary data,
@@ -163,8 +167,11 @@ function kalvidassign_delete_instance($id) {
  * Used for user activity reports.
  * $return->time = the time they did it
  * $return->info = a short text description
- *
- * @return null
+ * @param object $course - Moodle course object.
+ * @param object $user - Moodle user object.
+ * @param object $mod - Moodle moduble object.
+ * @param object $kalmediaassign - An object from the form in mod_form.php.
+ * @return object - outline of user.
  * @todo Finish documenting this function
  */
 function kalvidassign_user_outline($course, $user, $mod, $kalvidassign) {
@@ -178,8 +185,11 @@ function kalvidassign_user_outline($course, $user, $mod, $kalvidassign) {
 /**
  * Print a detailed representation of what a user has done with
  * a given particular instance of this module, for user activity reports.
- *
- * @return boolean
+ * @param object $course - Moodle course object.
+ * @param object $user - Moodle user object.
+ * @param object $mod - Moodle module obuject.
+ * @param object $kalmediaassign - An object from the form in mod_form.php.
+ * @return bool - this function always return true.
  * @todo Finish documenting this function
  */
 function kalvidassign_user_complete($course, $user, $mod, $kalvidassign) {
@@ -190,8 +200,10 @@ function kalvidassign_user_complete($course, $user, $mod, $kalvidassign) {
  * Given a course and a time, this module should find recent activity
  * that has occurred in kalvidassign activities and print it out.
  * Return true if there was output, or false is there was none.
- *
- * @return boolean
+ * @param object $course - Moodle course object.
+ * @param array $viewfullnames - fullnames of course.
+ * @param int $timestart - timestamp.
+ * @return boolean - True if anything was printed, otherwise false.
  * @todo Finish documenting this function
  */
 function kalvidassign_print_recent_activity($course, $viewfullnames, $timestart) {
@@ -206,8 +218,8 @@ function kalvidassign_print_recent_activity($course, $viewfullnames, $timestart)
  * independient of his role (student, teacher, admin...). The returned objects
  * must contain at least id property. See other modules as example.
  *
- * @param int $kalvidassign ID of an instance of this module
- * @return boolean|array false if no participants, array of objects otherwise
+ * @param int $kalvidassignid - ID of an instance of this module
+ * @return boolean|array - false if no participants, array of objects otherwise
  */
 function kalvidassign_get_participants($kalvidassignid) {
     // TODO: finish this function
@@ -221,20 +233,15 @@ function kalvidassign_get_participants($kalvidassignid) {
  * modified if necessary. See forum, glossary or journal modules
  * as reference.
  *
- * @param int $kalvidassign id ID of an instance of this module
- * @return mixed
+ * @param int $kalvidassignid - id of an instance of this module
+ * @param int $scaleid - id of scale.
+ * @return mixed - now, this function anywhere returns "false".
  * @todo Finish documenting this function
  */
 function kalvidassign_scale_used($kalvidassignid, $scaleid) {
     global $DB;
 
     $return = false;
-
-    //$rec = $DB->get_record("newmodule", array("id" => "$newmoduleid", "scale" => "-$scaleid"));
-    //
-    //if (!empty($rec) && !empty($scaleid)) {
-    //    $return = true;
-    //}
 
     return $return;
 }
@@ -244,8 +251,8 @@ function kalvidassign_scale_used($kalvidassignid, $scaleid) {
  * This function was added in 1.9
  *
  * This is used to find out if scale used anywhere
- * @param $scaleid int
- * @return boolean True if the scale is used by any kalvidassign
+ * @param int $scaleid - id of scale.
+ * @return bool - True if the scale is used by any kalvidassign
  */
 function kalvidassign_scale_used_anywhere($scaleid) {
     global $DB;
@@ -259,34 +266,42 @@ function kalvidassign_scale_used_anywhere($scaleid) {
 }
 
 /**
- * @param string $feature FEATURE_xx constant for requested feature
- * @return mixed True if module supports feature, null if doesn't know
+ * This function returns support status about a feature which is received as argument.
+ * @param string $feature - FEATURE_xx constant for requested feature
+ * @return mixed - True if module supports feature, null if doesn't know
  */
 function kalvidassign_supports($feature) {
     switch($feature) {
-        case FEATURE_GROUPS:                  return true;
-        case FEATURE_GROUPINGS:               return true;
-        case FEATURE_GROUPMEMBERSONLY:        return true;
-        case FEATURE_MOD_INTRO:               return true;
-        case FEATURE_COMPLETION_TRACKS_VIEWS: return true;
-        case FEATURE_GRADE_HAS_GRADE:         return true;
-        case FEATURE_GRADE_OUTCOMES:          return true;
-        case FEATURE_BACKUP_MOODLE2:          return true;
+        case FEATURE_GROUPS:
+            return true;
+        case FEATURE_GROUPINGS:
+            return true;
+        case FEATURE_GROUPMEMBERSONLY:
+            return true;
+        case FEATURE_MOD_INTRO:
+            return true;
+        case FEATURE_COMPLETION_TRACKS_VIEWS:
+            return true;
+        case FEATURE_GRADE_HAS_GRADE:
+            return true;
+        case FEATURE_GRADE_OUTCOMES:
+            return true;
+        case FEATURE_BACKUP_MOODLE2:
+            return true;
 
-        default: return null;
+        default:
+            return null;
     }
 }
 
 /**
  * Create/update grade item for given kaltura video assignment
  *
- * @global object
- * @param object kalvidassign object with extra cmidnumber
- * @param mixed optional array/object of grade(s); 'reset' means reset grades in gradebook
- * @return int, 0 if ok, error code otherwise
+ * @param object $kalvidassign - kalvidassign object with extra cmidnumber
+ * @param mixed $grades - optional array/object of grade(s); 'reset' means reset grades in gradebook
+ * @return int - 0 if ok, error code otherwise
  */
-function kalvidassign_grade_item_update($kalvidassign, $grades=NULL) {
-    global $CFG;
+function kalvidassign_grade_item_update($kalvidassign, $grades = null) {
 
     require_once(dirname(dirname(dirname(__FILE__))) . '/lib/gradelib.php');
 
@@ -305,9 +320,9 @@ function kalvidassign_grade_item_update($kalvidassign, $grades=NULL) {
         $params['gradetype'] = GRADE_TYPE_TEXT; // allow text comments only
     }
 
-    if ($grades  === 'reset') {
+    if ($grades === 'reset') {
         $params['reset'] = true;
-        $grades = NULL;
+        $grades = null;
     }
 
     return grade_update('mod/kalvidassign', $kalvidassign->course, 'mod', 'kalvidassign', $kalvidassign->id, 0, $grades, $params);
@@ -317,9 +332,9 @@ function kalvidassign_grade_item_update($kalvidassign, $grades=NULL) {
 /**
  * Removes all grades from gradebook
  *
- * @global object
- * @param int $courseid
- * @param string optional type
+ * @param int $courseid - id of course.
+ * @param string  $type - optional type.
+ * @return nothing.
  */
 function kalvidassign_reset_gradebook($courseid, $type='') {
     global $DB;
@@ -330,7 +345,7 @@ function kalvidassign_reset_gradebook($courseid, $type='') {
 
     $params = array ('course' => $courseid);
 
-    if ($kalvisassigns = $DB->get_records_sql($sql,$params)) {
+    if ($kalvisassigns = $DB->get_records_sql($sql, $params)) {
 
         foreach ($kalvisassigns as $kalvisassign) {
             kalvidassign_grade_item_update($kalvisassign, 'reset');
@@ -344,10 +359,8 @@ function kalvidassign_reset_gradebook($courseid, $type='') {
  * Actual implementation of the reset course functionality, delete all the
  * kaltura video submissions attempts for course $data->courseid.
  *
- * @global stdClass
- * @global object
- * @param object $data the data submitted from the reset course.
- * @return array status array
+ * @param object $data - the data submitted from the reset course.
+ * @return array - status array.
  *
  * TODO: test user data reset feature
  */
@@ -370,7 +383,9 @@ function kalvidassign_reset_userdata($data) {
             kalvidassign_reset_gradebook($data->courseid);
         }
 
-        $status[] = array('component'=>$componentstr, 'item'=>get_string('deleteallsubmissions', 'kalvidassign'), 'error'=>false);
+        $status[] = array('component' => $componentstr,
+                          'item' => get_string('deleteallsubmissions', 'kalvidassign'),
+                          'error' => false);
     }
 
     /// updating dates - shift may be negative too
@@ -384,6 +399,14 @@ function kalvidassign_reset_userdata($data) {
     return $status;
 }
 
+/**
+ * This function deletes a grade item.
+ *
+ * @param object $kalvidassign - kaltura video assignment object.
+ * @return array - status array.
+ *
+ * TODO: test user data reset feature
+ */
 function kalvidassign_grade_item_delete($kalvidassign) {
     global $CFG;
     require_once($CFG->libdir . '/gradelib.php');
@@ -394,9 +417,8 @@ function kalvidassign_grade_item_delete($kalvidassign) {
 
 
 /**
- * Function to be run periodically according to the moodle cron
- *
- * Finds all assignment notifications that have yet to be mailed out, and mails them
+ * Function to be run periodically according to the moodle cron.
+ * Finds all assignment notifications that have yet to be mailed out, and mails them.
  */
 function kalvidassign_cron () {
     return false;
@@ -405,17 +427,20 @@ function kalvidassign_cron () {
 /**
  * Return list of marked submissions that have not been mailed out for currently enrolled students
  *
- * @return array
+ * @param int $starttime - start time for search submissions.
+ * @param int $endtime - end time for search submissions.
+ * @return array - list of marked submissions.
  */
 function kalvidassign_get_unmailed_submissions($starttime, $endtime) {
 /*    global $CFG, $DB;
 
+    global $DB;
+
     return $DB->get_records_sql("SELECT ks.*, k.course, k.name
-                                   FROM {kalvidassign_submission} ks,
-                                        {kalvidassign} k
-                                  WHERE ks.mailed = 0
-                                        AND ks.timemarked <= ?
-                                        AND ks.timemarked >= ?
-                                        AND ks.assignment = k.id", array($endtime, $starttime));
-*/
+                                     FROM {kalvidassign_submission} ks,
+                                     {kalvidassign} k
+                                     WHERE ks.mailed = 0
+                                     AND ks.timemarked <= ?
+                                     AND ks.timemarked >= ?
+                                     AND ks.assignment = k.id", array($endtime, $starttime));
 }

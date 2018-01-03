@@ -1,5 +1,6 @@
 <?php
-
+// This file is part of Moodle - http://moodle.org/
+//
 // Moodle is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -16,19 +17,33 @@
 /**
  * Kaltura video assignment form
  *
- * @package    mod
- * @subpackage kalvidassign
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package   mod_kalvidassign
+ * @copyright (C) 2016-2017 Yamaguchi University <gh-cc@mlex.cc.yamaguchi-u.ac.jp>
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-if (!defined('MOODLE_INTERNAL')) {
-    die('Direct access to this script is forbidden.');    ///  It must be included from a Moodle page
-}
-
+require_once(dirname(dirname(dirname(__FILE__))) . '/config.php');
 require_once(dirname(dirname(dirname(__FILE__))) . '/course/moodleform_mod.php');
 
+if (!defined('MOODLE_INTERNAL')) {
+    // It must be included from a Moodle page.
+    die('Direct access to this script is forbidden.');
+}
+
+require_login();
+
+/**
+ * class of Kaltura Video assignment grade/submission form.
+ * @package mod_kalmediaassign
+ * @copyright  (C) 2016-2017 Yamaguchi University <gh-cc@mlex.cc.yamaguchi-u.ac.jp>
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
 class mod_kalvidassign_mod_form extends moodleform_mod {
-    function definition() {
+
+    /**
+     * This function outputs a submission information form.
+     */
+    public function definition() {
         global $CFG, $COURSE;
 
         $mform =& $this->_form;
@@ -46,13 +61,16 @@ class mod_kalvidassign_mod_form extends moodleform_mod {
         }
         $mform->addRule('name', null, 'required', null, 'client');
 
-        $this->add_intro_editor(false);
+        $this->standard_intro_elements(get_string('description', 'kalvidassign'));
 
-        $mform->addElement('date_time_selector', 'timeavailable', get_string('availabledate', 'kalvidassign'), array('optional'=>true));
+        $mform->addElement('date_time_selector', 'timeavailable',
+                           get_string('availabledate', 'kalvidassign'),
+                           array('optional' => true));
         $mform->setDefault('timeavailable', time());
-        $mform->addElement('date_time_selector', 'timedue', get_string('duedate', 'kalvidassign'), array('optional'=>true));
-        $mform->setDefault('timedue', time()+7*24*3600);
-
+        $mform->addElement('date_time_selector', 'timedue',
+                           get_string('duedate', 'kalvidassign'),
+                           array('optional' => true));
+        $mform->setDefault('timedue', time() + 7 * 24 * 3600);
 
         $ynoptions = array( 0 => get_string('no'), 1 => get_string('yes'));
 

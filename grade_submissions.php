@@ -1,5 +1,6 @@
 <?php
-
+// This file is part of Moodle - http://moodle.org/
+//
 // Moodle is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -17,6 +18,7 @@
  * Kaltura video assignment grade submission page
  *
  * @package    mod_kalvidassign
+ * @copyright  (C) 2016-2017 Yamaguchi University <gh-cc@mlex.cc.yamaguchi-u.ac.jp>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -26,7 +28,12 @@ require_once(dirname(__FILE__) . '/renderer.php');
 require_once(dirname(__FILE__) . '/locallib.php');
 require_once(dirname(__FILE__) . '/grade_preferences_form.php');
 
-$id      = required_param('cmid', PARAM_INT);           // Course Module ID
+if (!defined('MOODLE_INTERNAL')) {
+    // It must be included from a Moodle page.
+    die('Direct access to this script is forbidden.');
+}
+
+$id      = required_param('cmid', PARAM_INT); // Course Module ID.
 $mode    = optional_param('mode', 0, PARAM_TEXT);
 $tifirst = optional_param('tifirst', '', PARAM_TEXT);
 $tilast  = optional_param('tilast', '', PARAM_TEXT);
@@ -55,7 +62,7 @@ if (! $kalvidassignobj = $DB->get_record('kalvidassign', array('id' => $cm->inst
 
 require_login($course->id, false, $cm);
 
-global $PAGE, $OUTPUT, $USER;
+global $PAGE, $OUTPUT, $USER, $COURSE;
 
 $currentcrumb = get_string('singlesubmissionheader', 'kalvidassign');
 $PAGE->set_url($url);
@@ -63,61 +70,40 @@ $PAGE->set_title(format_string($kalvidassignobj->name));
 $PAGE->set_heading($course->fullname);
 $PAGE->navbar->add($currentcrumb);
 
+require_login();
+
 $renderer = $PAGE->get_renderer('mod_kalvidassign');
 
 if (local_kaltura_has_mobile_flavor_enabled() && local_kaltura_get_enable_html5()) {
-    $uiconf_id = local_kaltura_get_player_uiconf('player');
-    $url = new moodle_url(local_kaltura_htm5_javascript_url($uiconf_id));
-    $PAGE->requires->js($url, true);
-    $url = new moodle_url('/local/kaltura/js/frameapi.js');
+    $uiconfid = local_kaltura_get_player_uiconf('player_resource');
+    $url = new moodle_url(local_kaltura_html5_javascript_url($uiconf_id));
     $PAGE->requires->js($url, true);
 }
 
-/*  js_init_call must be executed before the header is output to this page otherwise
- *  the extra YUI libraries required to display Panel will not work
- */
-$jsmodule = array(
-    'name'     => 'local_kaltura',
-    'fullpath' => '/local/kaltura/js/kaltura.js',
-    'requires' => array('yui2-yahoo-dom-event',
-                        'yui2-container',
-                        'yui2-dragdrop',
-                        'yui2-animation',
-                        'base',
-                        'dom',
-                        'node',
-                        'io-base',
-                        'json-parse',
-                        ),
-    'strings' => array(
-            array('video_converting', 'kalvidassign'),
-            array('previewvideo', 'kalvidassign'),
-            )
-);
+$courseid    = $course->id;
+$uiconfid    = local_kaltura_get_player_uiconf('player_resource');
+$modalwidth  = 0;
+$modalheight = 0;
+$mediawidth  = 0;
+$mediaheight = 0;
 
+list($modalwidth, $modalheight) = kalvidassign_get_popup_player_dimensions();
+$mediawidth = $modalwidth - KALTURA_POPUP_WIDTH_ADJUSTMENT;
+$mediaheight = $modalheight - KALTURA_POPUP_HEIGHT_ADJUSTMENT;
 
-$courseid               = $course->id; // deprecated: get_courseid_from_context($PAGE->context);
-$conversion_script      = "../../local/kaltura/check_conversion.php?courseid={$courseid}&entry_id=";
-$markup                 = $renderer->display_video_preview_markup();
-$markup                 .= $renderer->display_loading_markup();
-$uiconf_id              = local_kaltura_get_player_uiconf('player');
-$modalwidth             = 0;
-$modalheight            = 0;
-$videowidth             = 0;
-$videoheight            = 0;
-
-list($modalwidth, $modalheight) = kalvidassign_get_player_dimensions();
-$videowidth = $modalwidth - KALTURA_POPUP_WIDTH_ADJUSTMENT;
-$videoheight = $modalheight - KALTURA_POPUP_HEIGHT_ADJUSTMENT;
-
-$PAGE->requires->js_init_call('M.local_kaltura.video_asignment_submission_view', array($conversion_script, $markup, $uiconf_id, $modalwidth, $modalheight,
-        $videowidth, $videoheight), true, $jsmodule);
+$PAGE->requires->css('/mod/kalvidassign/css/kalvidassign.css', true);
+$PAGE->requires->js_call_amd('mod_kalvidassign/grading', 'init', array($modalwidth, $modalheight));
 
 echo $OUTPUT->header();
 
-require_capability('mod/kalvidassign:gradesubmission', get_context_instance(CONTEXT_MODULE, $cm->id));
+require_capability('mod/kalvidassign:gradesubmission', context_course::instance($COURSE->id));
 
-add_to_log($course->id, 'kalvidassign', 'view submissions page', 'grade_submissions.php?cmid='.$cm->id, $kalvidassignobj->id, $cm->id);
+// Write a log.
+$event = \mod_kalvidassign\event\submission_page_viewed::create(array(
+    'objectid' => $kalvidassignobj->id,
+    'context' => context_module::instance($cm->id)
+));
+$event->trigger();
 
 $pref_form =  new kalvidassign_gradepreferences_form(null, array('cmid' => $cm->id, 'groupmode' => $cm->groupmode));
 $data = null;
@@ -201,9 +187,13 @@ if (!empty($grade_data->mode)) {
 
                 kalvidassign_grade_item_update($kalvidassignobj, $grade);
 
-                //add to log only if updating
-                add_to_log($kalvidassignobj->course, 'kalvidassign', 'update grades',
-                           'grade_submissions.php?cmid='.$cm->id, $cm->id);
+                // Write a log only if updating.
+                $event = \mod_kalvidassign\event\grades_updated::create(array(
+                    'objectid' => $kalvidassignobj->id,
+                    'context' => context_module::instance($cm->id),
+                    'relateduserid' => $userid
+                ));
+                $event->trigger();
 
             }
 
@@ -215,8 +205,6 @@ if (!empty($grade_data->mode)) {
             $usersubmissions->entry_id      = '';
             $usersubmissions->teacher       = $USER->id;
             $usersubmissions->timemarked    = $time;
-            //$usersubmissions->timecreated   = $time;
-            //$usersubmissions->timemodified  = $time;
 
             // Need to prevent completely empty submissions from getting entered
             // into the video submissions' table
@@ -251,9 +239,13 @@ if (!empty($grade_data->mode)) {
 
                 kalvidassign_grade_item_update($kalvidassignobj, $grade);
 
-                //add to log only if updating
-                add_to_log($kalvidassignobj->course, 'kalvidassign', 'update grades',
-                           'grade_submissions.php?cmid='.$cm->id, $cm->id);
+                // Write a log only if updating.
+                $event = \mod_kalvidassign\event\grades_updated::create(array(
+                    'objectid' => $kalvidassignobj->id,
+                    'context' => context_module::instance($cm->id),
+                    'relateduserid' => $userid
+                ));
+                $event->trigger();
 
             }
 

@@ -1,5 +1,6 @@
 <?php
-
+// This file is part of Moodle - http://moodle.org/
+//
 // Moodle is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -17,53 +18,143 @@
  * Kaltura video assignment locallib
  *
  * @package    mod_kalvidassign
+ * @copyright  (C) 2016-2017 Yamaguchi University <gh-cc@mlex.cc.yamaguchi-u.ac.jp>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
-
-/**
- * This function returns true if the assignment submission period is over
- *
- * @param kalvidassign obj
- *
- * @return bool - true if assignment submission period is over else false
  */
 
 define('KALASSIGN_ALL', 0);
 define('KALASSIGN_REQ_GRADING', 1);
 define('KALASSIGN_SUBMITTED', 2);
+define('KALASSIGN_NOTSUBMITTEDYET', 3);
 
+require_once(dirname(dirname(dirname(__FILE__))) . '/config.php');
 require_once(dirname(dirname(dirname(__FILE__))) . '/lib/gradelib.php');
-require_once($CFG->dirroot.'/mod/kalvidassign/renderable.php');
-require_once(dirname(dirname(dirname(__FILE__))).'/local/kaltura/locallib.php');
+require_once(dirname(dirname(dirname(__FILE__))) . '/mod/kalvidassign/renderable.php');
+require_once(dirname(dirname(dirname(__FILE__))) . '/local/kaltura/locallib.php');
+
+if (!defined('MOODLE_INTERNAL')) {
+    // It must be included from a Moodle page.
+    die('Direct access to this script is forbidden.');
+}
+
+require_login();
 
 /**
  * Check if the assignment submission end date has passed or if late submissions
- * are prohibited
+ * are prohibited.
  *
- * @param object - Kaltura instance video assignment object
- * @return bool - true if expired, otherwise false
+ * @param object $kalvidassign - Kaltura video assignment instance object.
+ * @return bool - true if expired, otherwise false.
  */
-function kalvidassign_assignemnt_submission_expired($kalvidassign) {
-    $expired = false;
-
-    if ($kalvidassign->preventlate) {
-        $expired = (0 != $kalvidassign->timedue) && (time() > $kalvidassign->timedue);
+function kalvidassign_assignment_submission_expired($kalvidassign) {
+    if (empty($kalvidassign->timedue)) {
+        return false;
     }
 
-    return $expired;
+    if (time() <= $kalvidassign->timedue) {
+        return false;
+    }
+
+    return true;
 }
 
+/**
+ * Check if the assignment submission is opened.
+ * are prohibited
+ *
+ * @param object $kalvidassign - Kaltura instance video assignment object.
+ * @return bool - true if opened, otherwise false.
+ */
+function kalvidassign_assignment_submission_opened($kalvidassign) {
+    if (empty($kalvidassign->timeavailable)) {
+        return true;
+    }
+
+    if (time() > $kalvidassign->timeavailable) {
+        return true;
+    }
+
+    return false;
+}
+
+/**
+ * Check if the assignment resubmission is allowed.
+ * are prohibited
+ *
+ * @param object $kalvidassign - Kaltura instance video assignment object.
+ * @param object $entryobj - Kaltura video entry object.
+ * @return bool - true if resubmission is allowed, otherwise false.
+ */
+function kalvidassign_assignment_submission_resubmit($kalvidassign, $entryobj) {
+    global $USER;
+
+    if (kalvidassign_assignment_submission_expired($kalvidassign) && $kalvidassign->preventlate ||
+        !kalvidassign_assignment_submission_opened($kalvidassign)) {
+        return false;
+    }
+
+    if ($entryobj == null) {
+        return true;
+    }
+
+    $gradinginfo = grade_get_grades($kalvidassign->course, 'mod', 'kalvidassign', $kalvidassign->id, $USER->id);
+
+    $item = $gradinginfo->items[0];
+    $grade = $item->grades[$USER->id];
+
+    if ($grade->grade == null || $grade->grade == -1) {   // Nothing to show yet.
+        return true;
+    }
+
+    if ($kalvidassign->resubmit) {
+        return true;
+    }
+
+    return false;
+}
+
+/**
+ * This function returns remaining time to assignment closed.
+ *
+ * @param int $duetime - due time in seconds.
+ *
+ * @return bool - true if assignment submission period is over else false.
+ */
+function kalvidassign_get_remainingdate($duetime) {
+    $now = time();
+    if ($now > $duetime) {
+        return get_string('submissionclosed', 'kalvidassign');
+    }
+
+    $diff = $duetime - $now;
+
+    $remain = '';
+
+    if ($diff > 86400) {
+        $days = (int)($diff / 86400);
+        $diff = $diff - $days * 86400;
+        $remain = $days . ' day(s) ';
+    }
+
+    $remain .= gmdate('h:i', $diff);
+
+    return $remain;
+}
+
+/**
+ * This function submit Kaltura video assignment.
+ * @param string $mode - submission mode.
+ * @return function - selected function from $mode.
+ */
 function kalvidassign_submissions($mode) {
-    //make user global so we can use the id
-    global $USER, $OUTPUT, $DB, $PAGE;
 
     $mailinfo = optional_param('mailinfo', null, PARAM_BOOL);
 
     if (optional_param('next', null, PARAM_BOOL)) {
-        $mode='next';
+        $mode = 'next';
     }
     if (optional_param('saveandnext', null, PARAM_BOOL)) {
-        $mode='saveandnext';
+        $mode = 'saveandnext';
     }
 
     if (is_null($mailinfo)) {
@@ -83,11 +174,11 @@ function kalvidassign_submissions($mode) {
 
 /**
  * Retrieve a list of users who have submitted assignments
- * 
- * @param int - assignment instance id
- * @param string - filter results by assignments that have been submitted or
+ *
+ * @param int $kalvidassignid - assignment instance id
+ * @param string $filter - filter results by assignments that have been submitted or
  * assignment that need to be graded or no filter at all
- * 
+ *
  * @return mixed - collection of users or false
  */
 function kalvidassign_get_submissions($kalvidassignid, $filter = '') {
@@ -119,6 +210,14 @@ function kalvidassign_get_submissions($kalvidassignid, $filter = '') {
 
 }
 
+/**
+ * Retrieve a database record of kalvidassign submission
+ *
+ * @param int $kalvidassignid - assignment instance id
+ * @param int $userid - user id in moodle
+ *
+ * @return mixed - collection of users or false
+ */
 function kalvidassign_get_submission($kalvidassignid, $userid) {
     global $DB;
 
@@ -140,7 +239,13 @@ function kalvidassign_get_submission($kalvidassignid, $userid) {
 
 }
 
-function kalvidassign_get_submission_grade_object($instance_id, $userid) {
+/**
+ * This function returns submission grade object.
+ * @param int $instanceid - id of instance which is modifid by teacher.
+ * @param int $userid - id of user which is affected by teacher.
+ * @return object - submission grade object.
+ */
+function kalvidassign_get_submission_grade_object($instanceid, $userid) {
     global $DB;
 
     $param = array('kvid' => $instance_id,
@@ -161,6 +266,11 @@ function kalvidassign_get_submission_grade_object($instance_id, $userid) {
     return $data;
 }
 
+/**
+ * This function validate Kasltura Media assignment module.
+ * @param int $cmid - id of assignment which teacher want to view.
+ * @return object - serach result.
+ */
 function kalvidassign_validate_cmid ($cmid) {
     global $DB;
 
@@ -180,6 +290,12 @@ function kalvidassign_validate_cmid ($cmid) {
 
 }
 
+/**
+ * This function returns string about lateness of submission.
+ * @param int $timesubmitted - timestamp which student submitted a media.
+ * @param int $timedue - end time of media submission.
+ * @return string - HTML markup for lateness of submission.
+ */
 function kalvidassign_display_lateness($timesubmitted, $timedue) {
     if (!$timedue) {
         return '';
@@ -194,7 +310,11 @@ function kalvidassign_display_lateness($timesubmitted, $timedue) {
     }
 }
 
-function kalvidassign_get_video_properties() {
+/**
+ * This function return media properties.
+ * @return array - list of media properties.
+ */
+function kalvidassign_get_media_properties() {
     return array('width' => '400',
                  'height' => '365',
                  'uiconf_id' => local_kaltura_get_player_uiconf('player'),
@@ -208,13 +328,11 @@ function kalvidassign_get_video_properties() {
  * Sends an email to ALL teachers in the course (or in the group if using separate groups).
  * Uses the methods kalvidassign_email_teachers_text() and kalvidassign_email_teachers_html() to construct the content.
  *
- * @global object
- * @global object
- * @param object - kaltura video assignment course module object
- * @param string - name of the video assignment instance
- * @param object - $submission object The submission that has changed
- * @param object - $context
- * @return void
+ * @param object $cm - kaltura media assignment course module object
+ * @param string $name - name of the media assignment instance
+ * @param object $submission - object The submission that has changed
+ * @param object $context - context object of submission.
+ * @return nothing.
  */
 function kalvidassign_email_teachers($cm, $name, $submission, $context) {
     global $CFG, $DB;
@@ -264,10 +382,10 @@ function kalvidassign_email_teachers($cm, $name, $submission, $context) {
 /**
  * Returns a list of teachers that should be grading given submission
  *
- * @param object - kaltura video assignment course module object
- * @param object - $user
- * @param object - a context object
- * @return array
+ * @param object $cm - kaltura media assignment course module object
+ * @param object $user - moodle user object.
+ * @param object $context - a context object.
+ * @return array - list of graders.
  */
 function kalvidassign_get_graders($cm, $user, $context) {
     //potential graders
@@ -281,7 +399,7 @@ function kalvidassign_get_graders($cm, $user, $context) {
             foreach ($groups as $group) {
                 foreach ($potgraders as $t) {
                     if ($t->id == $user->id) {
-                        continue; // do not send self
+                        continue; // Do not send self.
                     }
                     if (groups_is_member($group->id, $t->id)) {
                         $graders[$t->id] = $t;
@@ -289,12 +407,12 @@ function kalvidassign_get_graders($cm, $user, $context) {
                 }
             }
         } else {
-            // user not in group, try to find graders without group
+            // User not in group, try to find graders without group.
             foreach ($potgraders as $t) {
                 if ($t->id == $user->id) {
-                    continue; // do not send self
+                    continue; // Do not send self.
                 }
-                if (!groups_get_all_groups($cm->course, $t->id)) { //ugly hack
+                if (!groups_get_all_groups($cm->course, $t->id)) { // Ugly hack.
                     $graders[$t->id] = $t;
                 }
             }
@@ -302,7 +420,7 @@ function kalvidassign_get_graders($cm, $user, $context) {
     } else {
         foreach ($potgraders as $t) {
             if ($t->id == $user->id) {
-                continue; // do not send self
+                continue; // Do not send self.
             }
             $graders[$t->id] = $t;
         }
@@ -313,8 +431,8 @@ function kalvidassign_get_graders($cm, $user, $context) {
 /**
  * Creates the text content for emails to teachers
  *
- * @param $info object The info used by the 'emailteachermail' language string
- * @return string
+ * @param object $info - The info used by the 'emailteachermail' language string
+ * @return string - posted message.
  */
 function kalvidassign_email_teachers_text($info) {
     global $DB;
@@ -336,11 +454,11 @@ function kalvidassign_email_teachers_text($info) {
 }
 
  /**
- * Creates the html content for emails to teachers
- *
- * @param $info object The info used by the 'emailteachermailhtml' language string
- * @return string
- */
+  * Creates the html content for emails to teachers
+  *
+  * @param object $info - The info used by the 'emailteachermailhtml' language string
+  * @return string - HTML markup which prints posted messages.
+  */
 function kalvidassign_email_teachers_html($info) {
     global $CFG, $DB;
 
@@ -359,19 +477,22 @@ function kalvidassign_email_teachers_html($info) {
     return $posthtml;
 }
 
-
+/**
+ * This function returns list of student about a Kaltura Media assignment.
+ * @param int $cm - module instance of submission.
+ * @return array - list of student.
+ */
 function kalvidassign_get_assignment_students($cm) {
-    global $CFG;
 
-    $context    = get_context_instance(CONTEXT_MODULE, $cm->id);
+    $context = context_module::instance($cm->id);
     $users = get_enrolled_users($context, 'mod/kalvidassign:submit', 0, 'u.id');
-    
+
     return $users;
 }
 
 /**
- * This functions returns an array with the height and width used in the configiruation for displaying a video.
- * @return array An array whose first value is the width and second value is the height.
+ * This functions returns an array with the height and width used in the configiruation for displaying a media.
+ * @return array - An array whose first value is the width and second value is the height.
  */
 function kalvidassign_get_player_dimensions() {
     $kalturaconfig = get_config(KALTURA_PLUGIN_NAME);
@@ -381,6 +502,27 @@ function kalvidassign_get_player_dimensions() {
 
     $height = (isset($kalturaconfig->kalvidassign_player_height) && !empty($kalturaconfig->kalvidassign_player_height)) ?
             $kalturaconfig->kalvidassign_player_height : KALTURA_ASSIGN_VIDEO_HEIGHT;
+
+    return array($width, $height);
+}
+
+
+/**
+ * This functions returns an array with the height and width used in the configiruation for displaying a media.
+ * @return array - An array whose first value is the width and second value is the height.
+ */
+function kalvidassign_get_popup_player_dimensions() {
+    $kalturaconfig = get_config(KALTURA_PLUGIN_NAME);
+
+    $width = (
+              isset($kalturaconfig->kalvidassign_popup_player_width) &&
+              !empty($kalturaconfig->kalvidassign_popup_player_width)
+            ) ? $kalturaconfig->kalvidassign_popup_player_width : KALTURA_ASSIGN_POPUP_MEDIA_WIDTH;
+
+    $height = (
+               isset($kalturaconfig->kalvidassign_popup_player_height) &&
+               !empty($kalturaconfig->kalvidassign_popup_player_height)
+              ) ? $kalturaconfig->kalvidassign_popup_player_height : KALTURA_ASSIGN_POPUP_MEDIA_HEIGHT;
 
     return array($width, $height);
 }

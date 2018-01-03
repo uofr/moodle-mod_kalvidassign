@@ -1,5 +1,6 @@
 <?php
-
+// This file is part of Moodle - http://moodle.org/
+//
 // Moodle is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -17,38 +18,70 @@
  * Kaltura video assignment renderer class
  *
  * @package    mod_kalvidassign
- * @copyright  2013 onwards Remote-Learner {@link http://www.remote-learner.ca/}
+ * @copyright  (C) 2013 onwards Remote-Learner {@link http://www.remote-learner.ca/}
+ * @copyright  (C) 2016-2017 Yamaguchi University <gh-cc@mlex.cc.yamaguchi-u.ac.jp>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-if (!defined('MOODLE_INTERNAL')) {
-    die('Direct access to this script is forbidden.');    ///  It must be included from a Moodle page
-}
-
+require_once(dirname(dirname(dirname(__FILE__))) . '/config.php');
 require_once(dirname(dirname(dirname(__FILE__))) . '/lib/tablelib.php');
 require_once(dirname(dirname(dirname(__FILE__))) . '/lib/moodlelib.php');
 require_once(dirname(dirname(dirname(__FILE__))) . '/local/kaltura/locallib.php');
 require_once(dirname(dirname(dirname(__FILE__))) . '/local/kaltura/kaltura_entries.class.php');
 
+if (!defined('MOODLE_INTERNAL')) {
+    // It must be included from a Moodle page.
+    die('Direct access to this script is forbidden.');
+}
+
+require_login();
+
 /**
- * Table class for displaying video submissions for grading
+ * Table class for displaying media submissions for grading.
+ * @package   mod_kalvidassign
+ * @copyright (C) 2016-2017 Yamaguchi University <gh-cc@mlex.cc.yamaguchi-u.ac.jp>
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class submissions_table extends table_sql {
 
-    var $_quickgrade;
-    var $_gradinginfo;
-    var $_cminstance;
-    var $_grademax;
-    var $_cols = 20;
-    var $_rows = 4;
-    var $_tifirst;
-    var $_tilast;
-    var $_page;
-    var $_entries;
-    var $_access_all_groups = false;
-    var $_connection = false;
+    /** @var quicgrade is enable. */
+    protected $_quickgrade;
+    /** @var gradeinfo */
+    protected $_gradinginfo;
+    /** @var instance of cntext module. */
+    protected $_cminstance;
+    /** @var maximum grade set by teacher. */
+    protected $_grademax;
+    /** @var maximum columns */
+    protected $_cols = 20;
+    /** @var maximum rows */
+    protected $_rows = 4;
+    /** @var time of first submission */
+    protected $_tifirst;
+    /** @var time of last submission */
+    protected $_tilast;
+    /** @var page number */
+    protected $_page;
+    /** @var array of entries. */
+    protected $_entries;
+    /** @var teacher can acecss all groups */
+    protected $_access_all_groups = false;
+    /** @var Does client connect to kaltura server ? */
+    protected $_connection = false;
 
-    function __construct($uniqueid, $cm, $grading_info, $quickgrade = false,
+    /**
+     * This function is a cunstructor of renderer class.
+     * @param int $uniqueid - id of target submission.
+     * @param object $cm - object of Kaltura Media assignment module.
+     * @param object $gradinginfo - grading information object.
+     * @param bool $quickgrade - true/false of quick grade is on.
+     * @param string $tifirst - time of first submission.
+     * @param string $tilast - time of last submission.
+     * @param int $page - number of view page.
+     * @param array $entries - array of submissions.
+     * @param object $connection - connection object between client and Kaltura server.
+     */
+    public function __construct($uniqueid, $cm, $grading_info, $quickgrade = false,
                          $tifirst = '', $tilast = '', $page = 0, $entries = array(),
                          $connection) {
 
@@ -76,7 +109,12 @@ class submissions_table extends table_sql {
 
     }
 
-    function col_picture($data) {
+    /**
+     * This function return HTML markup of picture of student.
+     * @param object $data - user data.
+     * @return string - HTML markup of picture of user.
+     */
+    public function col_picture($data) {
         global $OUTPUT;
 
         $user = new stdClass();
@@ -86,6 +124,10 @@ class submissions_table extends table_sql {
         $user->firstname    = $data->firstname;
         $user->lastname     = $data->lastname;
         $user->email        = $data->email;
+        $user->firstnamephonetic = $data->firstnamephonetic;
+        $user->lastnamephonetic = $data->lastnamephonetic;
+        $user->middlename = $data->middlename;
+        $user->alternatename = $data->alternatename;
 
         $output = $OUTPUT->user_picture($user);
 
@@ -94,11 +136,15 @@ class submissions_table extends table_sql {
                      'value' => $data->id);
         $output .= html_writer::empty_tag('input', $attr);
 
-
         return $output;
     }
 
-    function col_selectgrade($data) {
+    /**
+     * This function return HTML markup for grade selecting.
+     * @param object $data - user data.
+     * @return string - HTML markup for grade selecting.
+     */
+    public function col_selectgrade($data) {
         global $CFG;
 
         $output      = '';
@@ -125,12 +171,12 @@ class submissions_table extends table_sql {
             if ($final_grade->overridden) {
                 $locked_overridden = 'overridden';
             }
+
             $attr = array('id' => 'g'.$data->id,
                           'class' => $locked_overridden);
 
 
             $output = html_writer::tag('div', $final_grade->formatted_grade, $attr);
-
 
         } else if (!empty($this->_quickgrade)) {
 
@@ -157,14 +203,16 @@ class submissions_table extends table_sql {
             }
         }
 
-
         return $output;
     }
 
 
-
-    function col_submissioncomment($data) {
-        global $OUTPUT;
+    /**
+     * This function return HTML markup for submission comment.
+     * @param object $data - user data.
+     * @return string - HTML markup for submission comment.
+     */
+    public function col_submissioncomment($data) {
 
         $output      = '';
         $final_grade = false;
@@ -175,7 +223,7 @@ class submissions_table extends table_sql {
 
         if ( (!is_bool($final_grade) && ($final_grade->locked || $final_grade->overridden)) ) {
 
-            $output = shorten_text(strip_tags($data->submissioncomment),15);
+            $output = shorten_text(strip_tags($data->submissioncomment), 15);
 
         } else if (!empty($this->_quickgrade)) {
 
@@ -189,13 +237,18 @@ class submissions_table extends table_sql {
             $output .= html_writer::end_tag('textarea');
 
         } else {
-            $output = shorten_text(strip_tags($data->submissioncomment),15);
+            $output = shorten_text(strip_tags($data->submissioncomment), 15);
         }
 
         return $output;
     }
 
-    function col_grademarked($data) {
+    /**
+     * This function return HTML markup for marked grade.
+     * @param object $data - user data.
+     * @return string - HTML markup for marked grade.
+     */
+    public function col_grademarked($data) {
 
         $output = '';
 
@@ -206,7 +259,12 @@ class submissions_table extends table_sql {
         return $output;
     }
 
-    function col_timemodified($data) {
+    /**
+     * This function return HTML markup for modified time of submission.
+     * @param object $data - user data.
+     * @return string - HTML markup for modified time of submission.
+     */
+    public function col_timemodified($data) {
 
         $attr = array('id' => 'ts'.$data->id);
 
@@ -225,24 +283,24 @@ class submissions_table extends table_sql {
 
             $attr = array('id' => 'video_' .$data->entry_id,
                           'class' => 'video_thumbnail_cl',
-                          'style' => 'cursor:pointer;',
-                          /*'style' => 'z-index: -2'*/);
+                          'style' => 'cursor:pointer;');
 
-
-            // Check if connection to Kaltura can be established
+            // Check if connection to Kaltura can be established.
             if ($this->_connection) {
 
                 if (!array_key_exists($data->entry_id, $this->_entries)) {
                     $note = get_string('grade_video_not_cache', 'kalvidassign');
-    
-                    // If the entry has not yet been cached, force a call to retrieve the entry object
-                    // from the Kaltura server so that the thumbnail can be displayed
+
+                    /*
+                     * If the entry has not yet been cached, force a call to retrieve the entry object
+                     * from the Kaltura server so that the thumbnail can be displayed.
+                     */
                     $entry_object = local_kaltura_get_ready_entry_object($data->entry_id, false);
                     $attr['src'] = $entry_object->thumbnailUrl;
                     $attr['alt'] = $entry_object->name;
                     $attr['title'] = $entry_object->name;
                 } else {
-                    // Retrieve object from cache
+                    // Retrieve object from cache.
                     $attr['src'] = $this->_entries[$data->entry_id]->thumbnailUrl;
                     $attr['alt'] = $this->_entries[$data->entry_id]->name;
                     $attr['title'] = $this->_entries[$data->entry_id]->name;
@@ -257,18 +315,53 @@ class submissions_table extends table_sql {
 
             $attr = array('id' => 'hidden_video_' .$data->entry_id,
                           'type' => 'hidden',
-                          'value' => $data->entry_id,);
+                          'value' => $data->entry_id);
             $output .= html_writer::empty_tag('input', $attr);
+
+            $entryobject = local_kaltura_get_ready_entry_object($data->entry_id, false);
+
+            if ($entryobject !== null) {
+                list($modalwidth, $modalheight) = kalvidassign_get_popup_player_dimensions();
+                $markup = '';
+
+                if (KalturaMediaType::IMAGE == $entryobject->mediaType) {
+                    // Determine if the mobile theme is being used.
+                    $theme = core_useragent::get_device_type_theme();
+                    $markup .= local_kaltura_create_image_markup($entryobject, $entryobject->name,
+                                                                   $theme, $modalwidth, $modalheight);
+                    $markup .= '<br><br>';
+                } else {
+                    $kalturahost = local_kaltura_get_host();
+                    $partnerid = local_kaltura_get_partner_id();
+                    $uiconfid = local_kaltura_get_player_uiconf('player_resource');
+                    $now = time();
+                    $markup .= "<iframe src=\"" . $kalturahost . "/p/" . $partnerid . "/sp/" . $partnerid . "00";
+                    $markup .= "/embedIframeJs/uiconf_id/" . $uiconfid . "/partnerid/" . $partnerid;
+                    $markup .= "?iframeembed=true&playerId=kaltura_player_" . $now;
+                    $markup .= "&entry_id=" . $data->entry_id . "\" width=\"" . $modalwidth . "\" height=\"" . $modalheight . "\" ";
+                    $markup .= "allowfullscreen webkitallowfullscreen mozAllowFullScreen frameborder=\"0\"></iframe>";
+                }
+
+                $attr = array('id' => 'hidden_markup_' . $data->entry_id,
+                              'style' => 'display: none;');
+                $output .= html_writer::start_tag('div', $attr);
+                $output .= $markup;
+                $output .= html_writer::end_tag('div');
+
+            }
         }
 
-
         $output .= html_writer::end_tag('center');
-
 
         return $output;
     }
 
-    function col_grade($data) {
+    /**
+     * This function return HTML markup for grade.
+     * @param object $data - user data.
+     * @return string - HTML markup forgrade.
+     */
+    public function col_grade($data) {
         $final_grade = false;
 
         if (array_key_exists($data->id, $this->_gradinginfo->items[0]->grades)) {
@@ -283,7 +376,12 @@ class submissions_table extends table_sql {
         return $output;
     }
 
-    function col_timemarked($data) {
+    /**
+     * This function return HTML markup about submission modified timestamp.
+     * @param object $data - object of submission.
+     * @return string - HTML markup.
+     */
+    public function col_timemarked($data) {
 
         $output = '-';
 
@@ -293,15 +391,19 @@ class submissions_table extends table_sql {
                 $output = html_writer::tag('div', userdate($data->timemarked), $attr);
 
         } else {
-            $otuput = '-';
+            $output = '-';
         }
 
         return $output;
     }
 
 
-    function col_status($data) {
-        global $OUTPUT, $CFG;
+    /**
+     * This function return HTML markup for status.
+     * @param object $data - user data.
+     * @return string - HTML markup for status of submission.
+     */
+    public function col_status($data) {
 
         require_once(dirname(dirname(dirname(__FILE__))) . '/lib/weblib.php');
 
@@ -321,7 +423,6 @@ class submissions_table extends table_sql {
         if (!empty($this->_page)) {
             $url->param('page', $this->_page);
         }
-
 
         $buttontext = '';
         if ($data->timemarked > 0) {
@@ -344,29 +445,28 @@ class submissions_table extends table_sql {
     /**
      *  Return a grade in user-friendly form, whether it's a scale or not
      *
-     * @global object
-     * @param mixed $grade
-     * @return string User-friendly representation of grade
+     * @param mixed $grade - grading point (int) or message (ex. "non", "yet", etc.)
+     * @return string - User-friendly representation of grade.
      *
      * TODO: Move this to locallib.php
      */
-    function display_grade($grade) {
+    public function display_grade($grade) {
         global $DB;
 
         static $kalscalegrades = array();   // Cache scales for each assignment - they might have different scales!!
 
-        if ($this->_cminstance->grade >= 0) {    // Normal number
+        if ($this->_cminstance->grade >= 0) { // Normal number.
             if ($grade == -1) {
                 return '-';
             } else {
                 return $grade.' / '.$this->_cminstance->grade;
             }
 
-        } else {                                // Scale
+        } else { // Scale.
 
             if (empty($kalscalegrades[$this->_cminstance->id])) {
 
-                if ($scale = $DB->get_record('scale', array('id'=>-($this->_cminstance->grade)))) {
+                if ($scale = $DB->get_record('scale', array('id' => -($this->_cminstance->grade)))) {
 
                     $kalscalegrades[$this->_cminstance->id] = make_menu_from_list($scale->scale);
                 } else {
@@ -384,20 +484,32 @@ class submissions_table extends table_sql {
 
 }
 
+/**
+ * Renderer class of Kaltura media submissions.
+ * @package   mod_kalvidassign
+ * @copyright (C) 2016-2017 Yamaguchi University <gh-cc@mlex.cc.yamaguchi-u.ac.jp>
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
 class mod_kalvidassign_renderer extends plugin_renderer_base {
 
-    function display_submission($kalvideoobj, $userid, $entry_obj = null) {
-        global $CFG;
+    /**
+     * This function display media submission.
+     * @param object $entryobj - object of media entry.
+     * @return string - HTML markup to display submission.
+     */
+    public function display_submission($entryobj = null) {
+        global $CFG, $OUTPUT;
 
         $img_source = '';
         $img_name   = '';
 
         $html = '';
-        $html .= html_writer::start_tag('p');
-        $html .= html_writer::start_tag('center');
 
-        // tabindex -1 is required in order for the focus event to be capture
-        // amongst all browsers
+        $html .= $OUTPUT->heading(get_string('submission', 'kalvidassign'), 3);
+
+        $html .= html_writer::start_tag('p');
+
+        // Tabindex -1 is required in order for the focus event to be capture amongst all browsers.
         $attr = array('id' => 'notification',
                       'class' => 'notification',
                       'tabindex' => '-1');
@@ -422,16 +534,36 @@ class mod_kalvidassign_renderer extends plugin_renderer_base {
 
         $html .= html_writer::empty_tag('img', $attr);
 
-
-        $html .= html_writer::end_tag('center');
         $html .= html_writer::end_tag('p');
 
         return $html;
 
     }
 
-    function display_mod_info($kalvideoobj, $context) {
+    /**
+     * This function display header of form.
+     * @param object $kalmediaobj - kalvidassign object.
+     * @return string - HTML markup for header part of form.
+     */
+    public function display_mod_header($kalmediaobj) {
+
+        $html = '';
+
+        $html .= $this->output->container_start('introduction');
+        $html .= $this->output->heading($kalmediaobj->name, 2);
+        $html .= $this->output->spacer(array('height' => 10));
+        $html .= $this->output->box_start('generalbox introduction');
+        $html .= $kalmediaobj->intro;
+        $html .= $this->output->box_end();
+        $html .= $this->output->container_end();
+        $html .= $this->output->spacer(array('height' => 20));
+
+        return $html;
+    }
+
+function display_mod_info($kalvideoobj, $context) {
         global $DB;
+
         $html = '';
 
         if (!empty($kalvideoobj->timeavailable)) {
@@ -575,15 +707,19 @@ class mod_kalvidassign_renderer extends plugin_renderer_base {
 
         $html .= html_writer::empty_tag('input', $attr);
 
-        $html .= html_writer::end_tag('center');
-
         $html .= html_writer::end_tag('form');
-
 
         return $html;
     }
 
-    function display_student_resubmit_buttons($cm, $userid, $disablesubmit = false) {
+    /**
+     * This function display resubmit button.
+     * @param object $cm - module context object.
+     * @param int $userid - id of user (student).
+     * @param bool $disablesubmit - User can submit media to this assignment.
+     * @return string - HTML markup to display resubmit button.
+     */
+    public function display_student_resubmit_buttons($cm, $userid, $disablesubmit = false) {
         global $DB;
 
         $param = array('vidassignid' => $cm->instance, 'userid' => $userid);
@@ -613,80 +749,15 @@ class mod_kalvidassign_renderer extends plugin_renderer_base {
                      'value' => sesskey());
         $html .= html_writer::empty_tag('input', $attr);
 
-        $html .= html_writer::start_tag('center');
-
-        // Add media type radio buttons
-        $html .= html_writer::start_tag('table');
-
-        // Check of KSR is enabled via config or capability
-        $enable_ksr = get_config(KALTURA_PLUGIN_NAME, 'enable_screen_recorder');
-        $context    = get_context_instance(CONTEXT_MODULE, $cm->id);
-        
-
-        if ($enable_ksr && has_capability('mod/kalvidassign:screenrecorder', $context)) {
-
-            $html .= html_writer::start_tag('tr');
-            $html .= html_writer::start_tag('td');
-            $attr = array('type'  => 'radio',
-                          'name'  => 'media_method',
-                          'id'    => 'id_media_method_1',
-                          'value' => '1');
-    
-            if ($disablesubmit) {
-                $attr['disabled'] = 'disabled';
-            }
-    
-            $html .= html_writer::empty_tag('input', $attr);
-            $html .= html_writer::end_tag('td');
-    
-            $html .= html_writer::start_tag('td');
-            $attr = array('for' => 'id_media_method_1');
-            $html .= html_writer::tag('label', get_string('use_screen_recorder', 'kalvidassign'), $attr);
-            $html .= html_writer::end_tag('td');
-            $html .= html_writer::end_tag('tr');
-        }
-
-
-        $html .= html_writer::start_tag('tr');
-        $html .= html_writer::start_tag('td');
-        $attr = array('type'    => 'radio',
-                      'name'    => 'media_method',
-                      'id'      => 'id_media_method_0',
-                      'value'   => '0',
-                      'checked' => 'checked');
-
-        if ($disablesubmit) {
-            $attr['disabled'] = 'disabled';
-        }
-
-        $html .= html_writer::empty_tag('input', $attr);
-        $html .= html_writer::end_tag('td');
-
-        $html .= html_writer::start_tag('td');
-        $attr = array('for' => 'id_media_method_0');
-        $html .= html_writer::tag('label', get_string('use_kcw', 'kalvidassign'), $attr);
-        $html .= html_writer::end_tag('td');
-        $html .= html_writer::end_tag('tr');
-        $html .= html_writer::end_tag('table');
-
         // Add submit and review buttons
         $attr = array('type' => 'button',
-                     'name' => 'replace_video',
-                     'id' => 'replace_video',
-                     'value' => get_string('replacevideo', 'kalvidassign'));
+                     'name' => 'add_media',
+                     'id' => 'id_add_media',
+                     'value' => get_string('replacemedia', 'kalvidassign'));
 
         if ($disablesubmit) {
             $attr['disabled'] = 'disabled';
         }
-
-        $html .= html_writer::empty_tag('input', $attr);
-
-        $html .= '&nbsp;&nbsp;';
-
-        $attr = array('type' => 'button',
-                      'id'   => 'preview_video',
-                      'name' => 'preview_video',
-                      'value' => get_string('reviewvideo', 'kalvidassign'));
 
         $html .= html_writer::empty_tag('input', $attr);
 
@@ -702,10 +773,7 @@ class mod_kalvidassign_renderer extends plugin_renderer_base {
             $attr['disabled'] = 'disabled';
         }
 
-
         $html .= html_writer::empty_tag('input', $attr);
-
-        $html .= html_writer::end_tag('center');
 
         $html .= html_writer::end_tag('form');
 
@@ -713,7 +781,12 @@ class mod_kalvidassign_renderer extends plugin_renderer_base {
 
     }
 
-    function display_instructor_buttons($cm,  $userid) {
+    /**
+     * This function display buttons for instructor.
+     * @param object $cm - module context object.
+     * @return string - HTML markup to display buttons for instructor.
+     */
+    public function display_instructor_buttons($cm) {
 
         $html = '';
 
@@ -748,15 +821,37 @@ class mod_kalvidassign_renderer extends plugin_renderer_base {
         return $html;
     }
 
-    function display_submissions_table($cm, $group_filter = 0, $filter = 'all', $perpage, $quickgrade = false,
+    /**
+     * This function display submissions table.
+     * @param object $cm - module context object.
+     * @param int $groupfilter - group filter option.
+     * @param string $filter - view filer option.
+     * @param int $perpage - submissions per page.
+     * @param bool $quickgrade - if quick grade is elable, return "true". Otherwise return "false".
+     * @param string $tifirst - first time of submissions.
+     * @param string $tilast - lasttime of submissions.
+     * @param int $page - number of page.
+     */
+    public function display_submissions_table($cm, $group_filter = 0, $filter = 'all', $perpage, $quickgrade = false,
                                        $tifirst = '', $tilast = '', $page = 0) {
 
         global $DB, $OUTPUT, $COURSE, $USER;
 
-        // Get a list of users who have submissions and retrieve grade data for those users
+        $kalturahost = local_kaltura_get_host();
+        $partnerid = local_kaltura_get_partner_id();
+        $uiconfid = local_kaltura_get_player_uiconf('player_resource');
+
+        $mediawidth = 0;
+        $mediaheight = 0;
+
+        list($modalwidth, $modalheight) = kalvidassign_get_popup_player_dimensions();
+        $mediawidth = $modalwidth - KALTURA_POPUP_WIDTH_ADJUSTMENT;
+        $mediaheight = $modalheight - KALTURA_POPUP_HEIGHT_ADJUSTMENT;
+
+        // Get a list of users who have submissions and retrieve grade data for those users.
         $users = kalvidassign_get_submissions($cm->instance, $filter);
 
-        $define_columns = array('picture', 'fullname', 'selectgrade', 'submissioncomment', 'timemodified',
+        $definecolumns = array('picture', 'fullname', 'selectgrade', 'submissioncomment', 'timemodified',
                                 'timemarked', 'status', 'grade');
 
         if (empty($users)) {
@@ -780,17 +875,19 @@ class mod_kalvidassign_renderer extends plugin_renderer_base {
             }
         }
 
-        // Compare student who have submitted to the assignment with students who are
-        // currently enrolled in the course
+        /*
+         *  Compare student who have submitted to the assignment with students who are
+         * currently enrolled in the course.
+         */
         $students = kalvidassign_get_assignment_students($cm);
-        $users = array_intersect(array_keys($users), array_keys($students));
 
+        $allstudents = array();
 
-        if (empty($users)) {
-            echo html_writer::tag('p', get_string('noenrolledstudents', 'kalvidassign'));
-            return;
+        foreach ($students as $s) {
+            $allstudents[] = $s->id;
         }
 
+        $users = array_intersect(array_keys($users), array_keys($students));
 
         $grading_info = grade_get_grades($cm->course, 'mod', 'kalvidassign', $cm->instance, $users);
 
@@ -823,7 +920,7 @@ class mod_kalvidassign_renderer extends plugin_renderer_base {
                 return;
             }
         } else {
-            $groups = groups_get_all_groups($COURSE->id);            
+            $groups = groups_get_all_groups($COURSE->id, $USER->id);
         }
 
         // Create a comma separated list of group ids
@@ -833,62 +930,96 @@ class mod_kalvidassign_renderer extends plugin_renderer_base {
 
         $group_ids = rtrim($group_ids, ',');
 
-        switch (groups_get_activity_groupmode($cm)) {
-            case NOGROUPS:
-                // No groups, do nothing
-                break;
-            case SEPARATEGROUPS:
+        if ('' !== $groupids) {
+            switch (groups_get_activity_groupmode($cm)) {
+                case NOGROUPS:
+                    // No groups, do nothing.
+                    break;
+                case SEPARATEGROUPS:
 
-                // If separate groups, but displaying all users then we must display only users
-                // who are in the same group as the current user
-                if (0 == $group_filter) {
-                    $groups_column = ', gm.groupid ';
-                    $groups_join   = ' RIGHT JOIN {groups_members} gm ON gm.userid = u.id RIGHT JOIN {groups} g ON g.id = gm.groupid ';
+                    /*
+                     * If separate groups, but displaying all users then we must display only users
+                     * who are in the same group as the current user.
+                     */
+                    if (0 == $groupfilter) {
+                        $groupscolumn = ', {groups_members}.groupid ';
+                        $groupsjoin = ' RIGHT JOIN {groups_members} ON {groups_members}.userid = {user}.id' .
+                                      ' RIGHT JOIN {groups} ON {groups}.id = {groups_members}.groupid ';
 
-                    $param['courseid'] = $cm->course;
-                    $groups_where  .= ' AND g.courseid = :courseid ';
+                        $param['courseid'] = $COURSE->id;
+                        $groupswhere  .= ' AND {groups}.courseid = :courseid ';
 
-                    $param['groupid'] = $group_filter;
-                    $groups_where .= ' AND g.id IN ('.$group_ids.') ';
+                        $param['groupid'] = $groupfilter;
+                        $groupswhere .= ' AND {groups}.id IN ('. $groupids . ') ';
 
                 }
 
             case VISIBLEGROUPS:
 
-                // if visible groups but displaying a specific group then we must display users within
-                // that group, if displaying all groups then display all users in the course
-                if (0 != $group_filter) {
+                     /*
+                      * If visible groups but displaying a specific group then we must display users within
+                      * that group, if displaying all groups then display all users in the course.
+                      */
+                    if (0 != $groupfilter) {
+                        $groupscolumn = ', {groups_members}.groupid ';
+                        $groupsjoin = ' RIGHT JOIN {groups_members} ON {groups_members}.userid = u.id' .
+                                      ' RIGHT JOIN {groups} ON {groups}.id = {groups_members}.groupid ';
 
-                    $groups_column = ', gm.groupid ';
-                    $groups_join   = ' RIGHT JOIN {groups_members} gm ON gm.userid = u.id RIGHT JOIN {groups} g ON g.id = gm.groupid ';
+                        $param['courseid'] = $COURSE->id;
+                        $groupswhere .= ' AND {groups_members}.courseid = :courseid ';
 
-                    $param['courseid'] = $cm->course;
-                    $groups_where  .= ' AND g.courseid = :courseid ';
+                        $param['groupid'] = $groupfilter;
+                        $groupswhere .= ' AND {groups_members}.groupid = :groupid ';
 
-                    $param['groupid'] = $group_filter;
-                    $groups_where .= ' AND gm.groupid = :groupid ';
-
-                }
-                break;
+                    }
+                    break;
+            }
         }
 
-        $kaltura        = new kaltura_connection();
-        $connection     = $kaltura->get_connection(true, KALTURA_SESSION_LENGTH);
+        $kaltura    = new kaltura_connection();
+        $connection = $kaltura->get_connection(true, KALTURA_SESSION_LENGTH);
+        $table      = new submissions_table('kal_video_submit_table', $cm, $gradinginfo, $quickgrade,
+                                            $tifirst, $tilast, $page, $entries, $connection);
 
-        $table          = new submissions_table('kal_vid_submit_table', $cm, $grading_info, $quickgrade,
-                                                $tifirst, $tilast, $page, $entries, $connection);
+        $roleid = 0;
 
-        // In order for the sortable first and last names to work.  User ID has to be the first column returned and must be
-        // returned as id.  Otherwise the table will display links to user profiles that are incorrect or do not exist
-        $columns        = 'u.id, kvs.id AS submitid, u.firstname, u.lastname, u.picture, u.imagealt, u.email, '.
-                          ' kvs.grade, kvs.submissioncomment, kvs.timemodified, kvs.entry_id, kvs.timemarked, '.
-                          '1 AS status, 1 AS selectgrade' . $groups_column;
-        $where          .= ' u.deleted = 0 AND u.id IN ('.implode(',', $users).') ' . $groups_where;
+        $roledata = $DB->get_records('role', array('shortname' => 'student'));
 
+        foreach ($roledata as $row) {
+            $roleid = $row->id;
+        }
+
+        /*
+         * In order for the sortable first and last names to work.
+         * User ID has to be the first column returned and must be returned as id.
+         * Otherwise the table will display links to user profiles that are incorrect or do not exist.
+         */
+        $columns = '{user}.id, {kalmediaassign_submission}.id submitid, {user}.firstname, {user}.lastname, ' .
+                   '{user}.picture, {user}.firstnamephonetic, {user}.lastnamephonetic, {user}.middlename, ' .
+                   '{user}.alternatename, {user}.imagealt, {user}.email, '.
+                   '{kalmediaassign_submission}.grade, {kalmediaassign_submission}.submissioncomment, ' .
+                   '{kalmediaassign_submission}.timemodified, {kalmediaassign_submission}.entry_id, ' .
+                   '{kalmediaassign_submission}.timemarked, ' .
+                   ' 1 as status, 1 as selectgrade' . $groupscolumn;
+        $where .= ' {user}.deleted = 0 ';
+
+        if ($filter == KALASSIGN_NOTSUBMITTEDYET and $users !== array()) {
+            $where .= ' and {user}.id not in (' . implode(',', $users) . ') ';
+        } else {
+            if (($filter == KALASSIGN_REQ_GRADING or $filter == KALASSIGN_SUBMITTED) and $users !== array()) {
+                $where          .= ' and {user}.id in (' . implode(',', $users) . ') ';
+            }
+        }
+
+        $where .= $groupswhere;
 
         $param['instanceid'] = $cm->instance;
-        $from = "{user} u LEFT JOIN {kalvidassign_submission} kvs ON kvs.userid = u.id AND kvs.vidassignid = :instanceid ".
-                $groups_join;
+        $from = "{role_assignments} " .
+                "join {user} on {user}.id={role_assignments}.userid and " .
+                "{role_assignments}.contextid='$coursecontext->id' and {role_assignments}.roleid='$roleid' " .
+                "left join {kalmediaassign_submission} on {kalmediaassign_submission}.userid = {user}.id and " .
+                "{kalmediaassign_submission}.mediaassignid = :instanceid " .
+                $groupsjoin;
 
         $baseurl        = new moodle_url('/mod/kalvidassign/grade_submissions.php',
                                         array('cmid' => $cm->id));
@@ -943,26 +1074,45 @@ class mod_kalvidassign_renderer extends plugin_renderer_base {
         echo html_writer::end_tag('form');
 
         echo html_writer::end_tag('center');
+
+        $attr = array('type' => 'hidden', 'name' => 'kalturahost', 'id' => 'kalturahost', 'value' => $kalturahost);
+        echo html_writer::empty_tag('input', $attr);
+
+        $attr = array('type' => 'hidden', 'name' => 'partnerid', 'id' => 'partnerid', 'value' => $partnerid);
+        echo html_writer::empty_tag('input', $attr);
+
+        $attr = array('type' => 'hidden', 'name' => 'uiconfid', 'id' => 'uiconfid', 'value' => $uiconfid);
+        echo html_writer::empty_tag('input', $attr);
+
+        $attr = array('type' => 'hidden', 'name' => 'modalwidth', 'id' => 'modalwidth', 'value' => $modalwidth);
+        echo html_writer::empty_tag('input', $attr);
+
+        $attr = array('type' => 'hidden', 'name' => 'modalheight', 'id' => 'modalheight', 'value' => $modalheight);
+        echo html_writer::empty_tag('input', $attr);
+
+        $attr = array('id' => 'modal_content', 'style' => '');
+        echo html_writer::start_tag('div', $attr);
+        echo html_writer::end_tag('div');
+
     }
 
     /**
      * Displays the assignments listing table.
      *
-     * @param object $course The course odject.
+     * @param object $course - The course odject.
+     * @return nothing.
      */
     public function display_kalvidassignments_table($course) {
         global $CFG, $DB, $PAGE, $OUTPUT, $USER;
 
         echo html_writer::start_tag('center');
 
-        $strplural = get_string('modulenameplural', 'kalvidassign');
-
         if (!$cms = get_coursemodules_in_course('kalvidassign', $course->id, 'm.timedue')) {
-            echo get_string('noassignments', 'mod_kalvidassign');
+            echo get_string('noassignments', 'kalvidassign');
             echo $OUTPUT->continue_button($CFG->wwwroot.'/course/view.php?id='.$course->id);
         }
 
-        $strsectionname  = get_string('sectionname', 'format_'.$course->format);
+        $strsectionname = get_string('sectionname', 'format_'.$course->format);
         $usesections = course_format_uses_sections($course->format);
         $modinfo = get_fast_modinfo($course);
 
@@ -971,8 +1121,6 @@ class mod_kalvidassign_renderer extends plugin_renderer_base {
         }
         $courseindexsummary = new kalvidassign_course_index_summary($usesections, $strsectionname);
 
-        $timenow = time();
-        $currentsection = '';
         $assignmentcount = 0;
 
         foreach ($modinfo->instances['kalvidassign'] as $cm) {
@@ -1106,37 +1254,33 @@ class mod_kalvidassign_renderer extends plugin_renderer_base {
      * This default method prints the teacher picture and name, date when marked,
      * grade and teacher submissioncomment.
      *
-     * @global object
-     * @global object
-     * @global object
-     * @param object $submission The submission object or NULL in which case it will be loaded
+     * @param object $kalmediaassign - The submission object or NULL in which case it will be loaded.
+     * @param object $context - context object.
+     * @return string - HTML markup for feedback.
      *
      * TODO: correct documentation for this function
      */
-    function display_grade_feedback($kalvidassign, $context) {
+    public function display_grade_feedback($kalvidassign, $context) {
         global $USER, $CFG, $DB, $OUTPUT;
 
         require_once($CFG->libdir.'/gradelib.php');
 
         // Check if the user is enrolled to the coruse and can submit to the assignment
         if (!is_enrolled($context, $USER, 'mod/kalvidassign:submit')) {
-            // can not submit assignments -> no feedback
+            // Can not submit assignments -> no feedback
             return;
         }
 
-        // Get the user's submission obj
-        //$submission = kalvidassign_get_submission($kalvidassign->id, $USER->id);
-
-        $grading_info = grade_get_grades($kalvidassign->course, 'mod', 'kalvidassign', $kalvidassign->id, $USER->id);
+        $gradinginfo = grade_get_grades($kalvidassign->course, 'mod', 'kalvidassign', $kalvidassign->id, $USER->id);
 
         $item = $grading_info->items[0];
         $grade = $item->grades[$USER->id];
 
-        if ($grade->hidden or $grade->grade === false) { // hidden or error
+        if ($grade->hidden || $grade->grade === false) { // Hidden or Error.
             return;
         }
 
-        if ($grade->grade === null and empty($grade->str_feedback)) {   /// Nothing to show yet
+        if ($grade->grade === null && empty($grade->str_feedback)) { // Nothing to show yet.
             return;
         }
 
@@ -1148,69 +1292,66 @@ class mod_kalvidassign_renderer extends plugin_renderer_base {
             print_error('cannotfindteacher');
         }
 
-    /// Print the feedback
-        echo $OUTPUT->heading(get_string('feedback', 'assign', fullname($teacher)));
+        $html = '';
 
-        echo '<table cellspacing="0" class="feedback">';
+        $html .= $this->output->container_start('feedback');
+        $html .= $this->output->heading(get_string('feedback', 'kalvidassign'), 3);
+        $html .= $this->output->box_start('generalbox feedback');
 
-        echo '<tr>';
-        echo '<td class="left picture">';
-        if ($teacher) {
-            echo $OUTPUT->user_picture($teacher);
-        }
-        echo '</td>';
-        echo '<td class="topic">';
-        echo '<div class="from">';
-        if ($teacher) {
-            echo '<div class="fullname">'.fullname($teacher).'</div>';
-        }
-        echo '<div class="time">'.userdate($graded_date).'</div>';
-        echo '</div>';
-        echo '</td>';
-        echo '</tr>';
+        $table = new html_table();
+        $table->attributes['class'] = 'generaltable';
 
-        echo '<tr>';
-        echo '<td class="left side">&nbsp;</td>';
-        echo '<td class="content">';
-        echo '<div class="grade">';
-        echo get_string("grade").': '.$grade->str_long_grade;
-        echo '</div>';
-        echo '<div class="clearer"></div>';
+        $row = new html_table_row();
+        $cell1 = new html_table_cell(get_string('grade'));
+        $cell1->attributes['style'] = '';
+        $cell1->attributes['width'] = '25%';
+        $cell2 = new html_table_cell($grade->str_long_grade);
+        $cell2->attributes['style'] = '';
+        $row->cells = array($cell1, $cell2);
+        $table->data[] = $row;
 
-        echo '<div class="comment">';
-        echo $grade->str_feedback;
-        echo '</div>';
-        echo '</tr>';
+        $row = new html_table_row();
+        $cell1 = new html_table_cell(get_string('gradedon', 'kalvidassign'));
+        $cell1->attributes['style'] = '';
+        $cell1->attributes['width'] = '25%';
+        $cell2 = new html_table_cell(userdate($gradeddate));
+        $cell2->attributes['style'] = '';
+        $row->cells = array($cell1, $cell2);
+        $table->data[] = $row;
 
-        echo '</table>';
-    }
+        $row = new html_table_row();
+        $cell1 = new html_table_cell(get_string('gradedby', 'kalvidassign'));
+        $cell1->attributes['style'] = '';
+        $cell1->attributes['width'] = '25%';
+        $cell2 = new html_table_cell($OUTPUT->user_picture($teacher) . '&nbsp;&nbsp;' . fullname($teacher));
+        $cell2->attributes['style'] = '';
+        $row->cells = array($cell1, $cell2);
+        $table->data[] = $row;
 
-    function render_progress_bar() {
+        $row = new html_table_row();
+        $cell1 = new html_table_cell(get_string('feedbackcomment', 'kalvidassign'));
+        $cell1->attributes['style'] = '';
+        $cell1->attributes['width'] = '25%';
+        $cell2 = new html_table_cell($grade->str_feedback);
+        $cell2->attributes['style'] = '';
+        $row->cells = array($cell1, $cell2);
+        $table->data[] = $row;
 
-        // Add progress bar
-        $output = '';
+        $html .= html_writer::table($table);
 
-        $attr         = array('id' => 'progress_bar');
-        $progress_bar = html_writer::tag('span', '', $attr);
+        $html .= $this->output->box_end();
+        $html .= $this->output->container_end();
+        $html .= $this->output->spacer(array('height' => 20));
 
-        $attr          = array('id' => 'slider_border');
-        $slider_border = html_writer::tag('div', $progress_bar, $attr);
+        return $html;
 
-        $attr          = array('id' => 'loading_text');
-        $loading_text  = html_writer::tag('div', get_string('checkingforjava', 'mod_kalvidassign'), $attr);
-
-        $attr   = array('id' => 'progress_bar_container',
-                        'style' => 'width:100%; padding-left:10px; padding-right:10px; visibility: hidden');
-        $output = '<br /><center>' .html_writer::tag('span', $slider_border . $loading_text, $attr) . '</center>';
-
-        return $output;
     }
 
     /**
-     * Render a course index summary.
+     * This function return course index summary.
      *
-     * @param kalvidassign_course_index_summary $indexsummary Structure for index summary.
-     * @return string HTML for assignments summary table
+     * @param kalmediaassign_course_index_summary $indexsummary - Structure for index summary.
+     * @return string - HTML markup for course index summary.
      */
     public function render_kalvidassign_course_index_summary(kalvidassign_course_index_summary $indexsummary) {
         $strplural = get_string('modulenameplural', 'kalvidassign');
@@ -1230,6 +1371,7 @@ class mod_kalvidassign_renderer extends plugin_renderer_base {
         $table->data = array();
 
         $currentsection = '';
+
         foreach ($indexsummary->assignments as $info) {
             $params = array('id' => $info['cmid']);
             $link = html_writer::link(new moodle_url('/mod/kalvidassign/view.php', $params), $info['cmname']);

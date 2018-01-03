@@ -1,5 +1,4 @@
 <?php
-
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -18,14 +17,17 @@
 /**
  * Defines message providers (types of messages being sent)
  *
- * @package mod-kalvidassign
- * @copyright  2010 onwards  Aparup Banerjee  http://moodle.com
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package    mod_kalvidassign
+ * @copyright  (C) 2010 onwards  Aparup Banerjee  http://moodle.com
+ * @copyright  (C) 2016-2017 Yamaguchi University <gh-cc@mlex.cc.yamaguchi-u.ac.jp>
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+
+defined('MOODLE_INTERNAL') || die();
 
 $messageproviders = array (
 
-/// assignment submissions
+// Assignment submissions
     'kalvidassign_updates' => array (
     )
 

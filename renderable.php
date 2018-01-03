@@ -17,14 +17,28 @@
 /**
  * This file contains the definition for the renderable classes for the assignment
  *
- * @package   mod_kalvidassign
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package    mod_kalvidassign
+ * @copyright  (C) 2016-2017 Yamaguchi University <gh-cc@mlex.cc.yamaguchi-u.ac.jp>
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die();
+if (!defined('MOODLE_INTERNAL')) {
+    // It must be included from a Moodle page.
+    die('Direct access to this script is forbidden.');
+}
+
+global $PAGE;
+
+$PAGE->set_url('/mod/kalvidassign/renderable.php');
+
+require_login();
 
 /**
- * Renderable course index summary
+ * Renderable class of Kaltura Video assignment.
+ *
+ * @package   mod_kalvidassign
+ * @copyright (C) 2016-2017 Yamaguchi University <gh-cc@mlex.cc.yamaguchi-u.ac.jp>
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class kalvidassign_course_index_summary implements renderable {
     /** @var array assignments A list of course module info and submission counts or statuses */
@@ -35,10 +49,9 @@ class kalvidassign_course_index_summary implements renderable {
     public $courseformatname = '';
 
     /**
-     * constructor
-     *
-     * @param $usesections boolean True if this course format uses sections
-     * @param $courseformatname string The id of this course format
+     * This function is constructor of renderable class.
+     * @param boolean $usesections - True if this course format uses sections.
+     * @param string $courseformatname - The id of this course format.
      */
     public function __construct($usesections, $courseformatname) {
         $this->usesections = $usesections;
@@ -47,14 +60,13 @@ class kalvidassign_course_index_summary implements renderable {
 
     /**
      * Add a row of data to display on the course index page
-     *
-     * @param int $cmid The course module id for generating a link
-     * @param string $cmname The course module name for generating a link
-     * @param string $sectionname The name of the course section (only if $usesections is true)
-     * @param int $timedue The due date for the assignment - may be 0 if no duedate
-     * @param string $submissioninfo A string with either the number of submitted assignments, or the
-     *                               status of the current users submission depending on capabilities.
-     * @param string $gradeinfo The current users grade if they have been graded and it is not hidden.
+     * @param int $cmid - The course module id for generating a link
+     * @param string $cmname - The course module name for generating a link
+     * @param string $sectionname - The name of the course section (only if $usesections is true)
+     * @param int $timedue - The due date for the assignment - may be 0 if no duedate
+     * @param string $submissioninfo - A string with either the number of submitted assignments, or the
+     *                                 status of the current users submission depending on capabilities.
+     * @param string $gradeinfo - The current users grade if they have been graded and it is not hidden.
      */
     public function add_assign_info($cmid, $cmname, $sectionname, $timedue, $submissioninfo, $gradeinfo) {
         $this->assignments[] = array(

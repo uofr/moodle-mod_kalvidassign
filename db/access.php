@@ -1,5 +1,6 @@
 <?php
-
+// This file is part of Moodle - http://moodle.org/
+//
 // Moodle is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -16,11 +17,13 @@
 /**
  * Kaltura video assignment capability definition
  *
- * @package mod
- * @subpackage kalvidassign
+ * @package mod_kalvidassign
+ * @copyright  (C) 2016-2017 Yamaguchi University <gh-cc@mlex.cc.yamaguchi-u.ac.jp>
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  *
  */
+
+defined('MOODLE_INTERNAL') || die();
 
 $capabilities = array(
 
@@ -41,7 +44,7 @@ $capabilities = array(
         'archetypes' => array(
             'teacher' => CAP_ALLOW,
             'editingteacher' => CAP_ALLOW,
-            'manager' => CAP_ALLOW,
+            'manager' => CAP_ALLOW
         )
     ),
 
