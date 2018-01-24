@@ -432,7 +432,6 @@ function kalvidassign_cron () {
  * @return array - list of marked submissions.
  */
 function kalvidassign_get_unmailed_submissions($starttime, $endtime) {
-/*    global $CFG, $DB;
 
     global $DB;
 

@@ -78,11 +78,11 @@ $PAGE->set_url('/mod/kalvidassign/view.php', array('id'=>$id));
 $PAGE->set_title(format_string($kalvidassign->name));
 $PAGE->set_heading($course->fullname);
 
-$context = get_context_instance(CONTEXT_MODULE, $cm->id);
+require_login();
 
-add_to_log($course->id, 'kalvidassign', 'view assignment details', 'view.php?id='.$cm->id, $kalvidassign->id, $cm->id);
+$modulecontext = context_module::instance(CONTEXT_MODULE, $cm->id);
 
-// Update 'viewed' state if required by completion system
+// Update 'viewed' state if required by completion system.
 $completion = new completion_info($course);
 $completion->set_module_viewed($cm);
 
@@ -100,11 +100,6 @@ $coursecontext = context_course::instance($COURSE->id);
 
 $renderer = $PAGE->get_renderer('mod_kalvidassign');
 
-echo $OUTPUT->box_start('generalbox');
-
-echo format_module_intro('kalvidassign', $kalvidassign, $cm->id);
-echo $OUTPUT->box_end();
-
 $entry_object   = null;
 $disabled       = false;
 
@@ -118,19 +113,19 @@ if (empty($connection)) {
 echo $renderer->display_mod_header($kalvidassign);
 
 if (has_capability('mod/kalvidassign:gradesubmission', $coursecontext)) {
-    echo $renderer->display_grading_summary($cm, $kalmediaassign, $coursecontext);
+    echo $renderer->display_grading_summary($cm, $kalvidassign, $coursecontext);
     echo $renderer->display_instructor_buttons($cm);
 }
 
-if (has_capability('mod/kalvidassign:submit', $coursecontext)) {
+if (is_enrolled($coursecontext, $USER->id) && has_capability('mod/kalvidassign:submit', $coursecontext)) {
 
-    echo $renderer->display_submission($cm, $USER->id, $entry_object);
+   echo $renderer->display_submission_status($cm, $kalvidassign, $coursecontext);
 
-    $param = array('vidassignid' => $kalmvidassign->id, 'userid' => $USER->id);
+    $param = array('vidassignid' => $kalvidassign->id, 'userid' => $USER->id);
     $submission = $DB->get_record('kalvidassign_submission', $param);
 
-    if (kalvidassign_assignemnt_submission_expired($kalvidassign)) {
-        $disabled = true;
+    if (!empty($submission->entry_id)) {
+        $entry_object = local_kaltura_get_ready_entry_object($submission->entry_id, false);
     }
 
     $disabled = !kalvidassign_assignment_submission_opened($kalvidassign) ||
@@ -145,16 +140,12 @@ if (has_capability('mod/kalvidassign:submit', $coursecontext)) {
 
     } else {
         if ($disabled ||
-            !kalvidassign_assignment_submission_resubmit($kalvidassign, $entryobject)) {
+            !kalvidassign_assignment_submission_resubmit($kalvidassign, $entry_object)) {
 
             $disabled = true;
         }
 
         echo $renderer->display_student_resubmit_buttons($cm, $USER->id, $disabled);
-
-        echo $renderer->render_progress_bar();
-
-        echo $renderer->display_grade_feedback($kalvidassign, $context);
 
         // Check if the repository plug-in exists.  Add Kaltura video to
         // the Kaltura category

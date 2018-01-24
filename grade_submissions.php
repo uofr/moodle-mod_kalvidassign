@@ -75,13 +75,13 @@ require_login();
 $renderer = $PAGE->get_renderer('mod_kalvidassign');
 
 if (local_kaltura_has_mobile_flavor_enabled() && local_kaltura_get_enable_html5()) {
-    $uiconfid = local_kaltura_get_player_uiconf('player_resource');
-    $url = new moodle_url(local_kaltura_html5_javascript_url($uiconf_id));
+    $uiconf_id = local_kaltura_get_player_uiconf('player_resource');
+    $url = new moodle_url(local_kaltura_htm5_javascript_url($uiconf_id));
     $PAGE->requires->js($url, true);
 }
 
 $courseid    = $course->id;
-$uiconfid    = local_kaltura_get_player_uiconf('player_resource');
+$uiconf_id    = local_kaltura_get_player_uiconf('player_resource');
 $modalwidth  = 0;
 $modalheight = 0;
 $mediawidth  = 0;

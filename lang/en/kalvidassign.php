@@ -1,4 +1,6 @@
 <?php
+// This file is part of Moodle - http://moodle.org/
+//
 // Moodle is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -21,8 +23,12 @@
 
 $string['modulenameplural'] = 'Assignments (Media)';
 $string['modulename'] = 'Assignment (Media)';
-$string['modulename_help'] = 'The Media assignment let\'s you create assignments that require students to upload and submit media which are stored locally on the institution\'s Kaltura CE (<a href="https://kaltura.cc.uregina.ca" target="_blank">kaltura.cc.uregina.ca</a>) server. Instructors can grade student submissions and provide feedback.';
+$string['modulename_help'] = 'The Media assignment let\'s you create assignments that require students to upload and submit media which are stored locally on the institution\'s Kaltura CE (<a href="https://urcourses-video.uregina.ca" target="_blank">urcourses-video.uregina.ca</a>) server. Instructors can grade student submissions and provide feedback.';
+$string['gradingsummary'] = 'Grading summary';
+$string['submissionstatus'] = 'Submission status';
+$string['gradingstatus'] = 'Grading status';
 $string['name'] = 'Name';
+$string['description'] = 'Description';
 $string['availabledate'] = 'Available from';
 $string['duedate'] = 'Due Date';
 $string['preventlate'] = 'Prevent late submissions';
@@ -37,13 +43,19 @@ $string['submitvideo'] = 'Submit media';
 $string['replacevideo'] = 'Replace media';
 $string['previewvideo'] = 'Preview';
 $string['gradesubmission'] = 'Grade submissions';
-$string['numberofsubmissions'] = 'Number of submissions: {$a}';
+$string['numberofmembers'] = 'Number of members';
+$string['numberofsubmissions'] = 'Number of submissions';
+$string['numberofrequiregrading'] = 'Number of require grading';
 $string['assignmentexpired'] = 'Submission cancelled.  The assignment due date has passed';
 $string['assignmentsubmitted'] = 'Success, your assignment has been submitted';
 $string['emptyentryid'] = 'Media assignment was not submitted correctly.  Please try to resubmit.';
 $string['deleteallsubmissions'] = 'Delete all media submissions';
 $string['fullname'] = 'Name';
 $string['grade'] = 'Grade';
+$string['gradedby'] = 'Graded by';
+$string['gradedon'] = 'Graded on';
+$string['feedbackcomment'] = 'Feedback comment';
+$string['currentgrade'] = 'Current grade';
 $string['submissioncomment'] = 'Comment';
 $string['timemodified'] = 'Last modified (Submission)';
 $string['grademodified'] = 'Last modified (Grade)';
@@ -54,6 +66,7 @@ $string['savepref'] = 'Save preferences';
 $string['all'] = 'All';
 $string['reqgrading'] = 'Require grading';
 $string['submitted'] = 'Submitted';
+$string['notsubmittedyet'] = 'Not submitted yet';
 $string['pagesize'] = 'Submissions shown per page';
 $string['pagesize_help'] = 'Set the number of assignment to display per page';
 $string['show'] = 'Show';
@@ -106,3 +119,19 @@ $string['noassignments'] = 'No media assignments found in the course';
 $string['submitted'] = 'Submitted';
 $string['nosubmission'] = 'No submission';
 $string['nosubmissions'] = 'No submissions';
+$string['status_nosubmission'] = 'No submission';
+$string['status_submitted'] = 'Submitted for grading';
+$string['status_marked'] = 'Graded';
+$string['status_nomarked'] = 'Not graded';
+$string['status_timemodified'] = 'Last modified';
+$string['submissionnotopened'] = 'Not opened yet';
+$string['submissionexpired'] = 'Expired';
+$string['latesubmission'] = 'Lated';
+$string['submissionclosed'] = 'Closed';
+$string['remainingtime'] = 'Remaining time';
+$string['not_insert'] = 'Failed to insert submission data.';
+$string['not_update'] = 'Failed to update submission data.';
+$string['event_submission_page_viewed'] = 'Media submission page viewed';
+$string['event_submission_detail_viewed'] = 'Media submission detail viewed';
+$string['event_grades_updated'] = 'Grades of Media submission updated';
+$string['event_media_submitted'] = 'Media submitted';
