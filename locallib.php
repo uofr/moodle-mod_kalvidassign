@@ -248,7 +248,7 @@ function kalvidassign_get_submission($kalvidassignid, $userid) {
 function kalvidassign_get_submission_grade_object($instanceid, $userid) {
     global $DB;
 
-    $param = array('kvid' => $instance_id,
+    $param = array('kvid' => $instanceid,
                    'userid' => $userid);
 
     $sql = "SELECT u.id, u.id AS userid, s.grade AS rawgrade, s.submissioncomment AS feedback, s.format AS feedbackformat,
