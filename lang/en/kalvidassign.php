@@ -21,6 +21,7 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+$string['activityoverview'] = 'You have Assignments (Media) that need attention';
 $string['modulenameplural'] = 'Assignments (Media)';
 $string['modulename'] = 'Assignment (Media)';
 $string['modulename_help'] = 'The Media assignment let\'s you create assignments that require students to upload and submit media which are stored locally on the institution\'s Kaltura CE (<a href="https://urcourses-video.uregina.ca" target="_blank">urcourses-video.uregina.ca</a>) server. Instructors can grade student submissions and provide feedback.';

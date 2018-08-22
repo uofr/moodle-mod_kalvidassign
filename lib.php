@@ -443,3 +443,300 @@ function kalvidassign_get_unmailed_submissions($starttime, $endtime) {
                                      AND ks.timemarked >= ?
                                      AND ks.assignment = k.id", array($endtime, $starttime));
 }
+
+
+/**
+ * This is a standard Moodle module that prints out a summary of all activities of this kind in the My Moodle page for a user
+ *
+ * @param object $courses
+ * @param object $htmlarray
+ * @global type $USER
+ * @global type $CFG
+ * @global type $DB
+ * @global type $OUTPUT
+ * @return bool success
+ */
+function kalvidassign_print_overview($courses, &$htmlarray) {
+    global $USER, $CFG, $DB, $OUTPUT;
+
+    if (empty($courses) || !is_array($courses) || count($courses) == 0) {
+        return array();
+    }
+
+    if (!$kalvidassigns = get_all_instances_in_courses('kalvidassign', $courses)) {
+        return;
+    }
+		
+    $submissioncount = array();
+    foreach ($kalvidassigns as $kalvidassign) {
+      $time = time();
+      $isopen = false;
+			if ($kalvidassign->timedue) {
+				$isopen = ($kalvidassign->timeavailable <= $time && $time <= $kalvidassign->timedue);
+			
+	      if (!$kalvidassign->preventlate) {
+	          $isopen = true;
+	      }
+			
+			} else {
+				$isopen = ($kalvidassign->timeavailable <= $time);
+			}
+			
+      if ($isopen) {
+          $kalvidassignmentids[] = $kalvidassign->id;
+      }
+  }
+
+  if (empty($kalvidassignmentids)) {
+      // No assignments to look at - we're done.
+      return true;
+  }
+	
+  $strduedate = get_string('duedate', 'assign');
+  $strcutoffdate = get_string('nosubmissionsacceptedafter', 'assign');
+  $strnolatesubmissions = get_string('nolatesubmissions', 'assign');
+  $strduedateno = get_string('duedateno', 'assign');
+  $strassignment = get_string('modulename', 'assign');
+	
+
+  // We do all possible database work here *outside* of the loop to ensure this scales.
+  list($sqlkalvidassignmentids, $kalvidassignmentidparams) = $DB->get_in_or_equal($kalvidassignmentids);
+
+  $mysubmissions = null;
+  $unmarkedsubmissions = null;
+	
+	foreach ($kalvidassigns as $kalvidassign) {    
+		
+    // Do not show assignments that are not open.
+    if (!in_array($kalvidassign->id, $kalvidassignmentids)) {
+        continue;
+    }
+		
+		
+		
+				$cm = get_coursemodule_from_id('kalvidassign', $kalvidassign->coursemodule);
+        $context = context_module::instance($cm->id);
+				
+				
+				
+        if (has_capability('mod/kalvidassign:submit', $context, null, false)) {
+            // Does the submission status of the assignment require notification?
+            $submitdetails = kalvidassign_get_mysubmission_details_for_print_overview($mysubmissions, $sqlkalvidassignmentids,
+                    $kalvidassignmentidparams, $kalvidassign);
+        } else {
+            $submitdetails = false;
+        }
+				
+        if (has_capability('mod/kalvidassign:gradesubmission', $context, null, false)) {
+            // Does the grading status of the assignment require notification ?
+            $gradedetails = kalvidassign_get_grade_details_for_print_overview($unmarkedsubmissions, $sqlkalvidassignmentids,
+                    $kalvidassignmentidparams, $kalvidassign, $context);
+        } else {
+            $gradedetails = false;
+        }
+
+        if (empty($submitdetails) && empty($gradedetails)) {
+            // There is no need to display this assignment as there is nothing to notify.
+            continue;
+        }
+
+        $dimmedclass = '';
+        if (!$kalvidassign->visible) {
+            $dimmedclass = ' class="dimmed"';
+        }
+        $href = $CFG->wwwroot . '/mod/kalvidassign/view.php?id=' . $kalvidassign->coursemodule;
+        $basestr = '<div class="kalvidassign overview">' .
+               '<div class="name">' .
+               $strassignment . ': '.
+               '<a ' . $dimmedclass .
+                   'title="' . $strassignment . '" ' .
+                   'href="' . $href . '">' .
+               format_string($kalvidassign->name) .
+               '</a></div>';
+        if ($kalvidassign->timedue) {
+            $userdate = userdate($kalvidassign->timedue);
+            $basestr .= '<div class="info">' . $strduedate . ': ' . $userdate . '</div>';
+        } else {
+            $basestr .= '<div class="info">' . $strduedateno . '</div>';
+        }
+        if ($kalvidassign->preventlate) {
+            $basestr .= '<div class="info">' . $strnolatesubmissions . '</div>';
+        }
+
+        // Show only relevant information.
+        if (!empty($submitdetails)) {
+            $basestr .= $submitdetails;
+        }
+
+        if (!empty($gradedetails)) {
+            $basestr .= $gradedetails;
+        }
+        $basestr .= '</div>';
+
+        if (empty($htmlarray[$kalvidassign->course]['kalvidassign'])) {
+            $htmlarray[$kalvidassign->course]['kalvidassign'] = $basestr;
+        } else {
+            $htmlarray[$kalvidassign->course]['kalvidassign'] .= $basestr;
+        }
+    }
+    return true;
+				
+				
+				
+		/*
+        $str = '<div class="assign_overview"><div class="name">Assignment: <a href="'.$CFG->wwwroot.'/mod/kalvidassign/view.php?id='.$kalvidassign->coursemodule.'">'.$kalvidassign->name.'</a></div><div class="info">Due date: '.userdate($kalvidassign->timedue).'</div><div class="details">My submission: </div></div>'.print_r($kalvidassign,1);
+             
+
+        if (empty($htmlarray[$kalvidassign->course]['kalvidassign'])) 				{
+            $htmlarray[$kalvidassign->course]['kalvidassign'] = $str;
+        } else {
+            $htmlarray[$kalvidassign->course]['kalvidassign'] .= $str;
+        }
+		
+		}
+		*/
+
+}
+
+
+
+/**
+ * This api generates html to be displayed to students in print overview section, related to their submission status of the given
+ * assignment.
+ *
+ * @param array $mysubmissions list of submissions of current user indexed by assignment id.
+ * @param string $sqlassignmentids sql clause used to filter open assignments.
+ * @param array $assignmentidparams sql params used to filter open assignments.
+ * @param stdClass $assignment current assignment
+ *
+ * @return bool|string html to display , false if nothing needs to be displayed.
+ * @throws coding_exception
+ */
+function kalvidassign_get_mysubmission_details_for_print_overview(&$mysubmissions, $sqlkalvidassignmentids, $kalvidassignmentidparams,
+                                                            $kalvidassignment) {
+    global $USER, $DB;
+
+
+    $strnotsubmittedyet = get_string('notsubmittedyet', 'assign');
+
+    if (!isset($mysubmissions)) {
+
+        // Get all user submissions, indexed by assignment id.
+        $dbparams = array_merge(array($USER->id), $kalvidassignmentidparams, array($USER->id));
+        $mysubmissions = $DB->get_records_sql('SELECT a.id AS kalvidassignment,
+                                                      s.timemarked AS timemarked,
+                                                      s.teacher AS grader,
+                                                      s.grade AS grade,
+                                                      s.mailed AS status
+                                                 FROM {kalvidassign} a
+                                            LEFT JOIN {kalvidassign_submission} s ON
+                                                      a.id = s.vidassignid AND
+                                                      s.userid = ? 
+                                                WHERE a.id ' . $sqlkalvidassignmentids . ' AND
+                                                      s.vidassignid = a.id AND
+                                                      s.userid = ?', $dbparams);
+    }
+
+    $submitdetails = '';
+    $submitdetails .= '<div class="details">';
+    $submitdetails .= get_string('mysubmission', 'assign');
+    $submission = false;
+
+    if (isset($mysubmissions[$kalvidassignment->id])) {
+        $submission = $mysubmissions[$kalvidassignment->id];
+    }
+
+    if ($submission && $submission->status == 1) {
+        // A valid submission already exists, no need to notify students about this.
+        return false;
+    }
+
+    // We need to show details only if a valid submission doesn't exist.
+    if (!$submission) {
+        $submitdetails .= $strnotsubmittedyet;
+    } else {
+        $submitdetails .= get_string('submitted', 'assign');
+    }
+		/*
+    if ($kalvidassignment->markingworkflow) {
+        $workflowstate = $DB->get_field('assign_user_flags', 'workflowstate', array('assignment' =>
+                $assignment->id, 'userid' => $USER->id));
+        if ($workflowstate) {
+            $gradingstatus = 'markingworkflowstate' . $workflowstate;
+        } else {
+            $gradingstatus = 'markingworkflowstate' . ASSIGN_MARKING_WORKFLOW_STATE_NOTMARKED;
+        }
+    } else */
+		if (!empty($submission->grade) && $submission->grade !== null && $submission->grade >= 0) {
+        $gradingstatus = ASSIGN_GRADING_STATUS_GRADED;
+    } else {
+        $gradingstatus = ASSIGN_GRADING_STATUS_NOT_GRADED;
+    }
+    $submitdetails .= ', ' . get_string($gradingstatus, 'assign');
+    $submitdetails .= '</div>';
+    return $submitdetails;
+}
+
+/**
+ * This api generates html to be displayed to teachers in print overview section, related to the grading status of the given
+ * assignment's submissions.
+ *
+ * @param array $unmarkedsubmissions list of submissions of that are currently unmarked indexed by assignment id.
+ * @param string $sqlassignmentids sql clause used to filter open assignments.
+ * @param array $assignmentidparams sql params used to filter open assignments.
+ * @param stdClass $assignment current assignment
+ * @param context $context context of the assignment.
+ *
+ * @return bool|string html to display , false if nothing needs to be displayed.
+ * @throws coding_exception
+ */
+function kalvidassign_get_grade_details_for_print_overview(&$unmarkedsubmissions, $sqlkalvidassignmentids, $kalvidassignmentidparams,
+                                                     $kalvidassignment, $context) {
+    global $DB;
+    if (!isset($unmarkedsubmissions)) {
+        // Build up and array of unmarked submissions indexed by assignment id/ userid
+        // for use where the user has grading rights on assignment.
+        $dbparams = array_merge(array(ASSIGN_SUBMISSION_STATUS_SUBMITTED), $kalvidassignmentidparams);
+        $rs = $DB->get_recordset_sql('SELECT s.vidassignid as assignment,
+                                             s.userid as userid,
+                                             s.id as id,
+                                             s.mailed as status,
+                                             s.timemarked as timegraded
+                                        FROM {kalvidassign_submission} s
+                                   LEFT JOIN {kalvidassign} a ON
+                                             a.id = s.vidassignid
+                                       WHERE
+                                             s.timemarked = 0 OR
+                                             s.grade = -1 AND
+                                             s.vidassignid ' . $sqlkalvidassignmentids, $dbparams);
+
+        $unmarkedsubmissions = array();
+        foreach ($rs as $rd) {
+            $unmarkedsubmissions[$rd->assignment][$rd->userid] = $rd->id;
+        }
+        $rs->close();
+    }
+
+    // Count how many people can submit.
+    $submissions = 0;
+    if ($students = get_enrolled_users($context, 'mod/kalvidassign:view', 0, 'u.id')) {
+        foreach ($students as $student) {
+            if (isset($unmarkedsubmissions[$kalvidassignment->id][$student->id])) {
+                $submissions++;
+            }
+        }
+    }
+
+    if ($submissions) {
+        $urlparams = array('id' => $kalvidassignment->coursemodule, 'action' => 'grading');
+        $url = new moodle_url('/mod/kalvidassign/view.php', $urlparams);
+        $gradedetails = '<div class="details">' .
+                '<a href="' . $url . '">' .
+                get_string('submissionsnotgraded', 'assign', $submissions) .
+                '</a></div>';
+        return $gradedetails;
+    } else {
+        return false;
+    }
+
+}
