@@ -1593,7 +1593,7 @@ function display_mod_info($kalvideoobj, $context) {
         $cell1 = new html_table_cell(get_string('gradedon', 'kalvidassign'));
         $cell1->attributes['style'] = '';
         $cell1->attributes['width'] = '25%';
-        $cell2 = new html_table_cell(userdate($gradeddate));
+        $cell2 = new html_table_cell(userdate($graded_date));
         $cell2->attributes['style'] = '';
         $row->cells = array($cell1, $cell2);
         $table->data[] = $row;
