@@ -66,7 +66,7 @@ if ($connection) {
     $host = local_kaltura_get_host();
 
     $PAGE->requires->js_call_amd('local_kaltura/simpleselector', 'init',
-                                 array($CFG->wwwroot . "/local/kaltura/simple_selector.php",
+                                 array($CFG->wwwroot . "/local/kaltura/simple_selector.php?seltype=kalvidassign",
                                        get_string('replace_media', 'mod_kalvidres')));
     $PAGE->requires->js_call_amd('local_kaltura/properties', 'init',
                                  array($CFG->wwwroot . "/local/kaltura/media_properties.php"));
