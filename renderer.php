@@ -334,11 +334,14 @@ class submissions_table extends table_sql {
                     $kalturahost = local_kaltura_get_host();
                     $partnerid = local_kaltura_get_partner_id();
                     $uiconfid = local_kaltura_get_player_uiconf('player_resource');
+										$ksession = local_kaltura_generate_kaltura_session(array($data->entry_id));
                     $now = time();
+										
                     $markup .= "<iframe src=\"" . $kalturahost . "/p/" . $partnerid . "/sp/" . $partnerid . "00";
                     $markup .= "/embedIframeJs/uiconf_id/" . $uiconfid . "/partnerid/" . $partnerid;
                     $markup .= "?iframeembed=true&playerId=kaltura_player_" . $now;
-                    $markup .= "&entry_id=" . $data->entry_id . "\" width=\"" . $modalwidth . "\" height=\"" . $modalheight . "\" ";
+										$markup .= '&ks='.$ksession;
+										$markup .= "&entry_id=" . $data->entry_id . "\" width=\"" . $modalwidth . "\" height=\"" . $modalheight . "\" ";
                     $markup .= "allowfullscreen webkitallowfullscreen mozAllowFullScreen frameborder=\"0\"></iframe>";
                 }
 
@@ -1187,7 +1190,7 @@ function display_mod_info($kalvideoobj, $context) {
         $groups_join   = '';
         $groups        = array();
         $group_ids     = '';
-        $context       = get_context_instance(CONTEXT_COURSE, $COURSE->id);
+        $context       = context_course::instance($COURSE->id);
 
         // Get all groups that the user belongs to, check if the user has capability to access all groups
         if (!has_capability('moodle/site:accessallgroups', $context, $USER->id)) {
