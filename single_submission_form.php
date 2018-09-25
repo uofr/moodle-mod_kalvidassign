@@ -113,9 +113,9 @@ class kalvidassign_singlesubmission_form extends moodleform {
             } else {
                 list($entryobject->width, $entryobject->height) = kalvidassign_get_player_dimensions();
                 if (0 == strcmp($theme, 'mymobile')) {
-                        $markup = local_kaltura_get_kwidget_code($entryobject, $uiconfid, $course, $session);
+                    $markup = local_kaltura_get_kwidget_code($entryobject, $uiconfid, $course, $session);
                 } else {
-                    $markup = local_kaltura_get_kdp_code($entryobject, $uiconfid, $session);
+                    $markup = local_kaltura_get_kdp_code($entryobject, $uiconfid, $course, $session);
                 }
             }
 
