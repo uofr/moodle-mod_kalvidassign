@@ -519,7 +519,7 @@ function kalvidassign_print_overview($courses, &$htmlarray) {
 				
 				
 				
-        if (has_capability('mod/kalvidassign:submit', $context, null, false)) {
+        if (has_capability('mod/kalvidassign:submit', $context, null, false) && !has_capability('mod/kalvidassign:gradesubmission', $context, null, false)) {
             // Does the submission status of the assignment require notification?
             $submitdetails = kalvidassign_get_mysubmission_details_for_print_overview($mysubmissions, $sqlkalvidassignmentids,
                     $kalvidassignmentidparams, $kalvidassign);
@@ -626,8 +626,7 @@ function kalvidassign_get_mysubmission_details_for_print_overview(&$mysubmission
         $mysubmissions = $DB->get_records_sql('SELECT a.id AS kalvidassignment,
                                                       s.timemarked AS timemarked,
                                                       s.teacher AS grader,
-                                                      s.grade AS grade,
-                                                      s.mailed AS status
+                                                      s.grade AS grade
                                                  FROM {kalvidassign} a
                                             LEFT JOIN {kalvidassign_submission} s ON
                                                       a.id = s.vidassignid AND
@@ -645,8 +644,9 @@ function kalvidassign_get_mysubmission_details_for_print_overview(&$mysubmission
     if (isset($mysubmissions[$kalvidassignment->id])) {
         $submission = $mysubmissions[$kalvidassignment->id];
     }
-
-    if ($submission && $submission->status == 1) {
+		//debugging://$submitdetails .= print_r($submission,1).':'.print_r($submission->status,1).'||';
+    //if ($submission && $submission->status == 1) {
+    if ($submission) {
         // A valid submission already exists, no need to notify students about this.
         return false;
     }
