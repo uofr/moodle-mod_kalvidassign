@@ -129,15 +129,19 @@ function kalvidassign_get_remainingdate($duetime) {
     $diff = $duetime - $now;
 
     $remain = '';
-
+		/*
     if ($diff > 86400) {
         $days = (int)($diff / 86400);
         $diff = $diff - $days * 86400;
-        $remain = $days . ' day(s) ';
+        $remain = $days . ' day' . ($days > 1 ? 's' : '') . ' ';
     }
 
-    $remain .= gmdate('h:i', $diff);
-
+    $remain .= (!empty(gmdate('G', $diff))) ? gmdate('G', $diff).' hours ' : '';
+    $remain .= ltrim(gmdate('i', $diff),'0').' minutes';
+		*/
+		
+		$remain .= format_time($diff);
+		
     return $remain;
 }
 
