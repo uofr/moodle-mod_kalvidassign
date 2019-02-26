@@ -1677,4 +1677,25 @@ function display_mod_info($kalvideoobj, $context) {
 
         return html_writer::table($table);
     }
+
+    public function create_video_preview_modal() {
+        $output = '';
+        $output .= '<div id="video_preview_modal" class="modal">';
+            $output .= '<div class="modal-dialog">';
+                $output .= '<div class="modal-content">';
+                    
+                    $output .= '<div class="modal-header">';
+                        $output .= '<button class="close" data-dismiss="modal">';
+                        $output .= '<span>&times;</span>';
+                        $output .= '</buton>';
+                    $output .= '</div>';
+                    
+                    $output .= '<div id="video_preview_body" class="modal-body">';
+                    $output .= '</div>';
+
+                $output .= '</div>';
+            $output .= '</div>';
+        $output .= '</div>';
+        return $output;
+    }
 }
