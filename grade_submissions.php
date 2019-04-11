@@ -258,6 +258,8 @@ if (!empty($grade_data->mode)) {
 $renderer->display_submissions_table($cm, $data->group_filter, $data->filter, $data->perpage,
                                      $data->quickgrade, $tifirst, $tilast, $page);
 
+echo $renderer->create_video_preview_modal();
+
 $pref_form->set_data($data);
 $pref_form->display();
 

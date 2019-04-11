@@ -959,8 +959,11 @@ function display_mod_info($kalvideoobj, $context) {
         $html .= html_writer::empty_tag('input', $attr);
 
         $attr = array('type' => 'button',
+                      'class' => 'btn btn-primary mr-2',
                      'id' => 'id_add_media',
                      'name' => 'add_media',
+                     'data-toggle' => 'modal',
+                     'data-target' => '#video_selector_modal',
                      'value' => get_string('addvideo', 'kalvidassign'));
 
         if ($disablesubmit) {
@@ -969,19 +972,8 @@ function display_mod_info($kalvideoobj, $context) {
 
         $html .= html_writer::empty_tag('input', $attr);
 
-        $html .= '&nbsp;&nbsp;';
-
-        $attr = array('type' => 'button',
-                      'id'   => 'preview_video',
-                      'name' => 'preview_video',
-                      'disabled' => 'disabled',
-                      'value' => get_string('previewvideo', 'kalvidassign'));
-
-        $html .= html_writer::empty_tag('input', $attr);
-
-        $html .= '&nbsp;&nbsp;';
-
         $attr = array('type' => 'submit',
+                      'class' => 'btn btn-secondary mr-2',
                      'name' => 'submit_media',
                      'id' => 'submit_media',
                      'disabled' => 'disabled',
@@ -1033,9 +1025,12 @@ function display_mod_info($kalvideoobj, $context) {
 
         // Add submit and review buttons.
         $attr = array('type' => 'button',
+                      'class' => 'btn btn-primary mr-2',
                      'name' => 'add_media',
                      'id' => 'id_add_media',
-                     'value' => get_string('replacevideo', 'kalvidassign'));
+                     'value' => get_string('replacevideo', 'kalvidassign'),
+                     'data-toggle' => 'modal',
+                     'data-target' => '#video_selector_modal');
 
         if ($disablesubmit) {
             $attr['disabled'] = 'disabled';
@@ -1043,13 +1038,12 @@ function display_mod_info($kalvideoobj, $context) {
 
         $html .= html_writer::empty_tag('input', $attr);
 
-        $html .= '&nbsp;&nbsp;';
-
         $attr = array('type' => 'submit',
-                     'id'   => 'submit_media',
-                     'name' => 'submit_media',
-                     'disabled' => 'disabled',
-                     'value' => get_string('submitvideo', 'kalvidassign'));
+                      'class' => 'btn btn-secondary mr-2',
+                      'id'   => 'submit_media',
+                      'name' => 'submit_media',
+                      'disabled' => 'disabled',
+                      'value' => get_string('submitvideo', 'kalvidassign'));
 
         if ($disablesubmit) {
             $attr['disabled'] = 'disabled';
@@ -1091,6 +1085,7 @@ function display_mod_info($kalvideoobj, $context) {
         $html .= html_writer::empty_tag('input', $attr);
 
         $attr = array('type' => 'submit',
+                      'class' => 'btn btn-primary',
                      'name' => 'grade_submissions',
                      'value' => get_string('gradesubmission', 'kalvidassign'));
 
@@ -1681,5 +1676,26 @@ function display_mod_info($kalvideoobj, $context) {
         }
 
         return html_writer::table($table);
+    }
+
+    public function create_video_preview_modal() {
+        $output = '';
+        $output .= '<div id="video_preview_modal" class="modal">';
+            $output .= '<div class="modal-dialog">';
+                $output .= '<div class="modal-content">';
+                    
+                    $output .= '<div class="modal-header">';
+                        $output .= '<button class="close" data-dismiss="modal">';
+                        $output .= '<span>&times;</span>';
+                        $output .= '</buton>';
+                    $output .= '</div>';
+                    
+                    $output .= '<div id="video_preview_body" class="modal-body">';
+                    $output .= '</div>';
+
+                $output .= '</div>';
+            $output .= '</div>';
+        $output .= '</div>';
+        return $output;
     }
 }
