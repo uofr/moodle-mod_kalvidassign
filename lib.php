@@ -23,8 +23,6 @@
  */
 
 require_once(dirname(dirname(dirname(__FILE__))) . '/config.php');
-// Include eventslib.php.
-//require_once($CFG->libdir.'/eventslib.php');
 // Include calendar/lib.php.
 require_once($CFG->dirroot.'/calendar/lib.php');
 

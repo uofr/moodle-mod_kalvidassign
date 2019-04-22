@@ -1680,7 +1680,7 @@ function display_mod_info($kalvideoobj, $context) {
 
     public function create_video_preview_modal() {
         $output = '';
-        $output .= '<div id="video_preview_modal" class="modal">';
+        $output .= '<div id="video_preview_modal" class="modal hide fade">';
             $output .= '<div class="modal-dialog">';
                 $output .= '<div class="modal-content">';
                     
