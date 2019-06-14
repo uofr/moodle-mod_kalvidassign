@@ -49,6 +49,8 @@ function kalvidassign_add_instance($kalvidassign) {
 
     if ($kalvidassign->timedue) {
         $event = new stdClass();
+        $event->type = CALENDAR_EVENT_TYPE_ACTION;
+        $event->timesort = $kalvidassign->timedue;
         $event->name        = $kalvidassign->name;
         $event->description = format_module_intro('kalvidassign', $kalvidassign, $kalvidassign->coursemodule);
         $event->courseid    = $kalvidassign->course;
@@ -59,8 +61,9 @@ function kalvidassign_add_instance($kalvidassign) {
         $event->eventtype   = 'due';
         $event->timestart   = $kalvidassign->timedue;
         $event->timeduration = 0;
+        $event->visible = instance_is_visible('kalvidassign', $kalvidassign);
 
-        calendar_event::create($event);
+        calendar_event::create($event, false);
     }
 
     kalvidassign_grade_item_update($kalvidassign);
@@ -88,29 +91,33 @@ function kalvidassign_update_instance($kalvidassign) {
         $event = new stdClass();
 
         if ($event->id = $DB->get_field('event', 'id', array('modulename'=>'kalvidassign', 'instance'=>$kalvidassign->id))) {
-
             $event->name        = $kalvidassign->name;
             $event->description = format_module_intro('kalvidassign', $kalvidassign, $kalvidassign->coursemodule);
             $event->timestart   = $kalvidassign->timedue;
-
+            $event->timesort    = $kalvidassign->timedue;
             $calendarevent = calendar_event::load($event->id);
-            $calendarevent->update($event);
-        } else {
-            $event = new stdClass();
-            $event->name        = $kalvidassign->name;
-            $event->description = format_module_intro('kalvidassign', $kalvidassign, $kalvidassign->coursemodule);
-            $event->courseid    = $kalvidassign->course;
-            $event->groupid     = 0;
-            $event->userid      = 0;
-            $event->modulename  = 'kalvidassign';
-            $event->instance    = $kalvidassign->id;
-            $event->eventtype   = 'due';
-            $event->timestart   = $kalvidassign->timedue;
-            $event->timeduration = 0;
-
-            calendar_event::create($event);
+            $calendarevent->update($event, false);
         }
-    } else {
+        else {
+            $event = new stdClass();
+            $event->name         = $kalvidassign->name;
+            $event->type         = CALENDAR_EVENT_TYPE_ACTION;
+            $event->timesort     = $kalvidassign->timedue;
+            $event->description  = format_module_intro('kalvidassign', $kalvidassign, $kalvidassign->coursemodule);
+            $event->courseid     = $kalvidassign->course;
+            $event->groupid      = 0;
+            $event->userid       = 0;
+            $event->modulename   = 'kalvidassign';
+            $event->instance     = $kalvidassign->id;
+            $event->eventtype    = 'due';
+            $event->timestart    = $kalvidassign->timedue;
+            $event->timeduration = 0;
+            $event->visible      = instance_is_visible('kalvidassign', $kalvidassign);
+
+            calendar_event::create($event, false);
+        }
+    }
+    else {
         $DB->delete_records('event', array('modulename'=>'kalvidassign', 'instance'=>$kalvidassign->id));
     }
 
@@ -735,4 +742,94 @@ function kalvidassign_get_grade_details_for_print_overview(&$unmarkedsubmissions
         return false;
     }
 
+}
+
+function mod_kalvidassign_core_calendar_provide_event_action(calendar_event $event, \core_calendar\action_factory $factory) {
+    $cm = get_fast_modinfo($event->courseid)->instances['kalvidassign'][$event->instance];
+
+    if (!empty($cm->customdata['timeclose']) && $cm->customdata['timeclose'] < time()) {
+        return null;
+    }
+
+    return $factory->create_instance(
+        get_string('addsubmission', 'assign'),
+        new \moodle_url('/mod/kalvidassign/view.php', array('id' => $cm->id)),
+        1,
+        true
+    );
+}
+
+/**
+ * This standard function will check all instances of this module
+ * and make sure there are up-to-date events created for each of them.
+ * If courseid = 0, then every kalvidassign event in the site is checked, else
+ * only kalvidassign events belonging to the course specified are checked.
+ *
+ * @param int $courseid
+ * @param int|stdClass $instance Klavidassign module instance or ID.
+ * @param int|stdClass $cm Course module object or ID (not used in this module).
+ * @return bool
+ */
+function kalvidassign_refresh_events($courseid = 0, $instance = null, $cm = null) {
+    global $DB;
+
+    // If we have instance information then we can just update the one event instead of updating all events.
+    if (isset($instance)) {
+        if (!is_object($instance)) {
+            $instance = $DB->get_record('kalvidassign', array('id' => $instance), '*', MUST_EXIST);
+        }
+        kalvidassign_update_events($instance);
+        return true;
+    }
+
+    if ($courseid == 0) {
+        if (!$kalvidassigns = $DB->get_records('kalvidassign')) {
+            return true;
+        }
+    }
+    else {
+        if (!$kalvidassigns = $DB->get_records('kalvidassign', array('course' => $courseid))) {
+            return true;
+        }
+    }
+
+    foreach ($kalvidassigns as $kalvidassign) {
+        kalvidassign_update_events($kalvidassign);
+    }
+
+    return true;
+}
+
+/**
+ * Updates both the calendar events for kalvidassign.
+ *
+ * @param  stdClass $kalvidassign The kalvidassign object (from the DB)
+ * @param  stdClass $cm The course module object.
+ */
+function kalvidassign_update_events($kalvidassign, $cm = null) {
+    global $DB;
+    if (!isset($cm)) {
+        $cm = get_coursemodule_from_instance('kalvidassign', $kalvidassign->id, $kalvidassign->course);
+    }
+    $event = new stdClass();
+    $event->name        = $kalvidassign->name;
+    $event->type        = CALENDAR_EVENT_TYPE_ACTION;
+    $event->description = format_module_intro('kalvidassign', $kalvidassign, $cm->id);
+    $event->timestart   = $kalvidassign->timedue;
+    $event->timesort    = $kalvidassign->timedue;
+    if ($event->id = $DB->get_field('event', 'id', array('modulename' => 'kalvidassign', 'instance' => $kalvidassign->id))) {
+        $calendarevent = calendar_event::load($event->id);
+        $calendarevent->update($event, false);
+    } else if ($kalvidassign->timeavailable > 0) {
+        // The kalvidassign is scheduled and the event should be published.
+        $event->courseid    = $kalvidassign->course;
+        $event->groupid     = 0;
+        $event->userid      = 0;
+        $event->modulename  = 'kalvidassign';
+        $event->instance    = $kalvidassign->id;
+        $event->eventtype   = 'due';
+        $event->timeduration = 0;
+        $event->visible = $cm->visible;
+        calendar_event::create($event, false);
+    }
 }
