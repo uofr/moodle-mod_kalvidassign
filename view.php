@@ -114,9 +114,6 @@ if (has_capability('mod/kalvidassign:gradesubmission', $coursecontext)) {
 
 if (is_enrolled($coursecontext, $USER->id) && has_capability('mod/kalvidassign:submit', $coursecontext)) {
 
-    $modal_renderer = $PAGE->get_renderer('local_kaltura');
-    echo $modal_renderer->create_video_selector_modal();
-
    echo $renderer->display_submission_status($cm, $kalvidassign, $coursecontext);
 
     $param = array('vidassignid' => $kalvidassign->id, 'userid' => $USER->id);
@@ -131,6 +128,15 @@ if (is_enrolled($coursecontext, $USER->id) && has_capability('mod/kalvidassign:s
                 $kalvidassign->preventlate;
 
     echo $renderer->display_submission($entry_object);
+
+    $local_kaltura_renderer = $PAGE->get_renderer('local_kaltura');
+    $local_mymedia_renderer = $PAGE->get_renderer('local_mymedia');
+
+    echo $local_kaltura_renderer->create_selector_modal();
+    echo $local_mymedia_renderer->render_from_template('local_mymedia/mod_progress_modal', ['back_link'=>'#']);
+    $simple_uploader = new \local_mymedia\output\simple_uploader($connection);
+    echo $local_mymedia_renderer->render_simple_upload_modal($simple_uploader);
+    echo $local_mymedia_renderer->render_webcam_upload_modal($simple_uploader);
 
     if (empty($submission->entry_id) and empty($submission->timecreated)) {
 

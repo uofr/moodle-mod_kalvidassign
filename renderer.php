@@ -937,9 +937,7 @@ function display_mod_info($kalvideoobj, $context) {
         $html = '';
 
         $target = new moodle_url('/mod/kalvidassign/submission.php');
-
         $attr = array('method'=>'POST', 'action'=>$target);
-
         $html .= html_writer::start_tag('form', $attr);
 
         $attr = array('type' => 'hidden',
@@ -958,27 +956,36 @@ function display_mod_info($kalvideoobj, $context) {
                      'value' => sesskey());
         $html .= html_writer::empty_tag('input', $attr);
 
-        $attr = array('type' => 'button',
-                      'class' => 'btn btn-primary mr-2',
-                     'id' => 'id_add_media',
-                     'name' => 'add_media',
-                     'data-toggle' => 'modal',
-                     'data-target' => '#video_selector_modal',
-                     'value' => get_string('addvideo', 'kalvidassign'));
+        $html .= html_writer::start_div('btn-group');
+        $html .= html_writer::tag('button', get_string('add_select', 'mod_kalvidassign'), [
+            'type' => 'button',
+            'class' => 'btn btn-primary mr-2',
+            'data-toggle' => 'modal',
+            'data-target' => '#selector_modal',
+        ]);
+        $html .= html_writer::tag('button', get_string('add_upload', 'mod_kalvidassign'), [
+            'type' => 'button',
+            'class' => 'btn btn-primary mr-2',
+            'data-toggle' => 'modal',
+            'data-target' => '#simple_upload_modal',
 
-        if ($disablesubmit) {
-            $attr['disabled'] = 'disabled';
-        }
-
-        $html .= html_writer::empty_tag('input', $attr);
+        ]);
+        $html .= html_writer::tag('button', get_string('add_record', 'mod_kalvidassign'), [
+            'type' => 'button',
+            'class' => 'btn btn-primary mr-2',
+            'data-toggle' => 'modal',
+            'data-target' => '#webcam_upload_modal',
+        ]);
+        $html .= html_writer::end_div();
 
         $attr = array('type' => 'submit',
                       'class' => 'btn btn-secondary mr-2',
                      'name' => 'submit_media',
                      'id' => 'submit_media',
-                     'disabled' => 'disabled',
                      'value' => get_string('submitvideo', 'kalvidassign'));
-
+        if ($disablesubmit) {
+            $attr['disabled'] = 'disabled';
+        }
         $html .= html_writer::empty_tag('input', $attr);
 
         $html .= html_writer::end_tag('form');
@@ -1000,9 +1007,7 @@ function display_mod_info($kalvideoobj, $context) {
         $submissionrec = $DB->get_record('kalvidassign_submission', $param);
 
         $html = '';
-
         $target = new moodle_url('/mod/kalvidassign/submission.php');
-
         $attr = array('method'=>'POST', 'action'=>$target);
 
         $html .= html_writer::start_tag('form', $attr);
@@ -1023,38 +1028,40 @@ function display_mod_info($kalvideoobj, $context) {
                      'value' => sesskey());
         $html .= html_writer::empty_tag('input', $attr);
 
-        // Add submit and review buttons.
-        $attr = array('type' => 'button',
-                      'class' => 'btn btn-primary mr-2',
-                     'name' => 'add_media',
-                     'id' => 'id_add_media',
-                     'value' => get_string('replacevideo', 'kalvidassign'),
-                     'data-toggle' => 'modal',
-                     'data-target' => '#video_selector_modal');
-
-        if ($disablesubmit) {
-            $attr['disabled'] = 'disabled';
-        }
-
-        $html .= html_writer::empty_tag('input', $attr);
+        $html .= html_writer::start_div('btn-group');
+        $html .= html_writer::tag('button', get_string('add_select', 'mod_kalvidassign'), [
+            'type' => 'button',
+            'class' => 'btn btn-primary mr-2',
+            'data-toggle' => 'modal',
+            'data-target' => '#selector_modal',
+        ]);
+        $html .= html_writer::tag('button', get_string('add_upload', 'mod_kalvidassign'), [
+            'type' => 'button',
+            'class' => 'btn btn-primary mr-2',
+            'data-toggle' => 'modal',
+            'data-target' => '#simple_upload_modal',
+        ]);
+        $html .= html_writer::tag('button', get_string('add_record', 'mod_kalvidassign'), [
+            'type' => 'button',
+            'class' => 'btn btn-primary mr-2',
+            'data-toggle' => 'modal',
+            'data-target' => '#webcam_upload_modal',
+        ]);
+        $html .= html_writer::end_div();
 
         $attr = array('type' => 'submit',
                       'class' => 'btn btn-secondary mr-2',
                       'id'   => 'submit_media',
                       'name' => 'submit_media',
-                      'disabled' => 'disabled',
                       'value' => get_string('submitvideo', 'kalvidassign'));
-
         if ($disablesubmit) {
             $attr['disabled'] = 'disabled';
         }
-
         $html .= html_writer::empty_tag('input', $attr);
 
         $html .= html_writer::end_tag('form');
 
         return $html;
-
     }
 
     /**
