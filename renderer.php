@@ -983,15 +983,9 @@ function display_mod_info($kalvideoobj, $context) {
                       'class' => 'btn btn-primary',
                      'name' => 'submit_media',
                      'id' => 'submit_media',
-                     'value' => get_string('submitvideo', 'kalvidassign'));
-        if ($disablesubmit) {
-            $attr['disabled'] = 'disabled';
-        }
+                     'value' => get_string('submitvideo', 'kalvidassign'),
+                     'disabled' => 'disabled');
         $html .= html_writer::empty_tag('input', $attr);
-        $html .= html_writer::end_div();
-
-        $html .= html_writer::start_div('', ['id'=>'submission_required', 'class' => 'd-none']);
-        $html .= html_writer::tag('span', 'You must upload a video first!', ['class'=>'text-danger']);
         $html .= html_writer::end_div();
 
         $html .= html_writer::end_tag('form');
@@ -1060,10 +1054,8 @@ function display_mod_info($kalvideoobj, $context) {
                       'class' => 'btn btn-primary',
                       'id'   => 'submit_media',
                       'name' => 'submit_media',
-                      'value' => get_string('submitvideo', 'kalvidassign'));
-        if ($disablesubmit) {
-            $attr['disabled'] = 'disabled';
-        }
+                      'value' => get_string('submitvideo', 'kalvidassign'),
+                      'disabled' => 'disabled');
         $html .= html_writer::empty_tag('input', $attr);
         $html .= html_writer::end_div();
 
