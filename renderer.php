@@ -956,30 +956,31 @@ function display_mod_info($kalvideoobj, $context) {
                      'value' => sesskey());
         $html .= html_writer::empty_tag('input', $attr);
 
-        $html .= html_writer::start_div('btn-group');
+        $html .= html_writer::start_div('btn-group mb-3');
         $html .= html_writer::tag('button', get_string('add_select', 'mod_kalvidassign'), [
             'type' => 'button',
-            'class' => 'btn btn-primary mr-2',
+            'class' => 'btn btn-secondary mr-2',
             'data-toggle' => 'modal',
             'data-target' => '#selector_modal',
         ]);
         $html .= html_writer::tag('button', get_string('add_upload', 'mod_kalvidassign'), [
             'type' => 'button',
-            'class' => 'btn btn-primary mr-2',
+            'class' => 'btn btn-secondary mr-2',
             'data-toggle' => 'modal',
             'data-target' => '#simple_upload_modal',
 
         ]);
         $html .= html_writer::tag('button', get_string('add_record', 'mod_kalvidassign'), [
             'type' => 'button',
-            'class' => 'btn btn-primary mr-2',
+            'class' => 'btn btn-secondary mr-2',
             'data-toggle' => 'modal',
             'data-target' => '#webcam_upload_modal',
         ]);
         $html .= html_writer::end_div();
 
+        $html .= html_writer::start_div();
         $attr = array('type' => 'submit',
-                      'class' => 'btn btn-secondary mr-2',
+                      'class' => 'btn btn-primary',
                      'name' => 'submit_media',
                      'id' => 'submit_media',
                      'value' => get_string('submitvideo', 'kalvidassign'));
@@ -987,6 +988,11 @@ function display_mod_info($kalvideoobj, $context) {
             $attr['disabled'] = 'disabled';
         }
         $html .= html_writer::empty_tag('input', $attr);
+        $html .= html_writer::end_div();
+
+        $html .= html_writer::start_div('', ['id'=>'submission_required', 'class' => 'd-none']);
+        $html .= html_writer::tag('span', 'You must upload a video first!', ['class'=>'text-danger']);
+        $html .= html_writer::end_div();
 
         $html .= html_writer::end_tag('form');
 
@@ -1028,29 +1034,30 @@ function display_mod_info($kalvideoobj, $context) {
                      'value' => sesskey());
         $html .= html_writer::empty_tag('input', $attr);
 
-        $html .= html_writer::start_div('btn-group');
+        $html .= html_writer::start_div('btn-group mb-3');
         $html .= html_writer::tag('button', get_string('add_select', 'mod_kalvidassign'), [
             'type' => 'button',
-            'class' => 'btn btn-primary mr-2',
+            'class' => 'btn btn-secondary mr-2',
             'data-toggle' => 'modal',
             'data-target' => '#selector_modal',
         ]);
         $html .= html_writer::tag('button', get_string('add_upload', 'mod_kalvidassign'), [
             'type' => 'button',
-            'class' => 'btn btn-primary mr-2',
+            'class' => 'btn btn-secondary mr-2',
             'data-toggle' => 'modal',
             'data-target' => '#simple_upload_modal',
         ]);
         $html .= html_writer::tag('button', get_string('add_record', 'mod_kalvidassign'), [
             'type' => 'button',
-            'class' => 'btn btn-primary mr-2',
+            'class' => 'btn btn-secondary mr-2',
             'data-toggle' => 'modal',
             'data-target' => '#webcam_upload_modal',
         ]);
         $html .= html_writer::end_div();
 
+        $html .= html_writer::start_div();
         $attr = array('type' => 'submit',
-                      'class' => 'btn btn-secondary mr-2',
+                      'class' => 'btn btn-primary',
                       'id'   => 'submit_media',
                       'name' => 'submit_media',
                       'value' => get_string('submitvideo', 'kalvidassign'));
@@ -1058,6 +1065,7 @@ function display_mod_info($kalvideoobj, $context) {
             $attr['disabled'] = 'disabled';
         }
         $html .= html_writer::empty_tag('input', $attr);
+        $html .= html_writer::end_div();
 
         $html .= html_writer::end_tag('form');
 

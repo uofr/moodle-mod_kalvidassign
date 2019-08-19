@@ -64,7 +64,7 @@ if ($connection) {
     // If a connection is made then include the JS libraries.
     $partnerid = local_kaltura_get_partner_id();
     $host = local_kaltura_get_host();
-
+    
     $PAGE->requires->js_call_amd('local_kaltura/simpleselector', 'init');
 }
 
