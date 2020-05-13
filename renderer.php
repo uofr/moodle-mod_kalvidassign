@@ -1178,10 +1178,10 @@ function display_mod_info($kalvideoobj, $context) {
         $where = '';
         switch ($filter) {
             case KALASSIGN_SUBMITTED:
-                $where = ' kvs.timemodified > 0 AND ';
+                $where = ' {kalvidassign_submission}.timemodified > 0 AND ';
                 break;
             case KALASSIGN_REQ_GRADING:
-                $where = ' kvs.timemarked < kvs.timemodified AND ';
+                $where = ' {kalvidassign_submission}.timemarked < {kalvidassign_submission}.timemodified AND ';
                 break;
         }
 
