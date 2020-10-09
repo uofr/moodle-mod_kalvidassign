@@ -94,30 +94,7 @@ class kalvidassign_singlesubmission_form extends moodleform {
         }
 
         if (!empty($entryobject)) {
-
-					$course = $this->_customdata->cm->course;
-
-            // Set the session
-            $session = local_kaltura_generate_kaltura_session(array($entryobject->id));
-
-            // Determine if the mobile theme is being used.
-            $theme = core_useragent::get_device_type_theme();
-
-            // Get uiconfid for presentation.
-            $uiconfid = local_kaltura_get_player_uiconf('player_resource');
-
-            $markup = '';
-
-            if (KalturaMediaType::IMAGE == $entryobject->mediaType) {
-                $markup = local_kaltura_create_image_markup($entryobject, $entryobject->name, $theme);
-            } else {
-                list($entryobject->width, $entryobject->height) = kalvidassign_get_player_dimensions();
-                if (0 == strcmp($theme, 'mymobile')) {
-                    $markup = local_kaltura_get_kwidget_code($entryobject, $uiconfid, $course, $session);
-                } else {
-                    $markup = local_kaltura_get_kdp_code($entryobject, $uiconfid, $course, $session);
-                }
-            }
+            $markup = \local_kaltura\kaltura_player::get_player($entryobject);
 
             $mform->addElement('static', 'description', get_string('submission', 'kalvidassign'), $markup);
 

@@ -60,7 +60,6 @@ function kalvidassign_assignment_submission_expired($kalvidassign) {
 
 /**
  * Check if the assignment submission is opened.
- * are prohibited
  *
  * @param object $kalvidassign - Kaltura instance video assignment object.
  * @return bool - true if opened, otherwise false.

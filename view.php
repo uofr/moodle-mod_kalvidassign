@@ -26,153 +26,86 @@ require_once(dirname(dirname(dirname(__FILE__))) . '/config.php');
 require_once(dirname(dirname(dirname(__FILE__))) . '/local/kaltura/locallib.php');
 require_once(dirname(__FILE__) . '/locallib.php');
 
-$id = optional_param('id', 0, PARAM_INT); // Course Module ID.
+$id = required_param('id', PARAM_INT); // Course Module ID.
 
-// Retrieve module instance.
-if (empty($id)) {
-    print_error('invalidid', 'kalvidassign');
-}
-
-if (!empty($id)) {
-
-    if (! $cm = get_coursemodule_from_id('kalvidassign', $id)) {
-        print_error('invalidcoursemodule');
-    }
-
-    if (! $course = $DB->get_record('course', array('id' => $cm->course))) {
-        print_error('coursemisconf');
-    }
-
-    if (! $kalvidassign = $DB->get_record('kalvidassign', array("id"=>$cm->instance))) {
-        print_error('invalidid', 'kalvidassign');
-    }
-}
+$cm = get_coursemodule_from_id('kalvidassign', $id, 0, false, MUST_EXIST);
+$course = get_course($cm->course);
+$kalvidassign = $DB->get_record('kalvidassign', ['id' => $cm->instance], '*', MUST_EXIST);
 
 require_course_login($course->id, true, $cm);
 
-global $SESSION, $CFG, $USER, $COURSE;
+$coursecontext = context_course::instance($COURSE->id);
 
 // Connect to Kaltura
 $kaltura        = new kaltura_connection();
 $connection     = $kaltura->get_connection(true, KALTURA_SESSION_LENGTH);
-$partner_id     = '';
-$sr_unconf_id   = '';
-$host           = '';
-
-if ($connection) {
-
-    // If a connection is made then include the JS libraries.
-    $partnerid = local_kaltura_get_partner_id();
-    $host = local_kaltura_get_host();
-
-    $PAGE->requires->js_call_amd('local_kaltura/simpleselector', 'init');
-}
-
-
-$PAGE->set_url('/mod/kalvidassign/view.php', array('id'=>$id));
-$PAGE->set_title(format_string($kalvidassign->name));
-$PAGE->set_heading($course->fullname);
-
-require_login();
-
-$modulecontext = context_module::instance(CONTEXT_MODULE, $cm->id);
 
 // Update 'viewed' state if required by completion system.
 $completion = new completion_info($course);
 $completion->set_module_viewed($cm);
 
-if (local_kaltura_has_mobile_flavor_enabled() && local_kaltura_get_enable_html5()) {
-    $uiconf_id = local_kaltura_get_player_uiconf('player');
-    $url = new moodle_url(local_kaltura_htm5_javascript_url($uiconf_id));
-    $PAGE->requires->js($url, true);
-    $url = new moodle_url('/local/kaltura/js/frameapi.js');
-    $PAGE->requires->js($url, true);
-}
-
-echo $OUTPUT->header();
-
-$coursecontext = context_course::instance($COURSE->id);
-
 $renderer = $PAGE->get_renderer('mod_kalvidassign');
 
-$entry_object   = null;
-$disabled       = false;
+$PAGE->set_url('/mod/kalvidassign/view.php', array('id'=>$id));
+$PAGE->set_title(format_string($kalvidassign->name));
+$PAGE->set_heading($course->fullname);
 
-if (empty($connection)) {
+echo $renderer->header();
+echo $renderer->heading($kalvidassign->name);
 
-    echo $OUTPUT->notification(get_string('conn_failed_alt', 'local_kaltura'));
-    $disabled = true;
-
-}
-
-echo $renderer->display_mod_header($kalvidassign);
-
+// Instructor View
 if (has_capability('mod/kalvidassign:gradesubmission', $coursecontext)) {
     echo $renderer->display_grading_summary($cm, $kalvidassign, $coursecontext);
     echo $renderer->display_instructor_buttons($cm);
 }
 
+// Student View
 if (is_enrolled($coursecontext, $USER->id) && has_capability('mod/kalvidassign:submit', $coursecontext)) {
-
-   echo $renderer->display_submission_status($cm, $kalvidassign, $coursecontext);
-
-    $param = array('vidassignid' => $kalvidassign->id, 'userid' => $USER->id);
-    $submission = $DB->get_record('kalvidassign_submission', $param);
-
+    $submission = $DB->get_record('kalvidassign_submission', ['vidassignid' => $kalvidassign->id, 'userid' => $USER->id]);
     if (!empty($submission->entry_id)) {
         $entry_object = local_kaltura_get_ready_entry_object($submission->entry_id, false);
     }
 
-    $disabled = !kalvidassign_assignment_submission_opened($kalvidassign) ||
-                kalvidassign_assignment_submission_expired($kalvidassign) &&
-                $kalvidassign->preventlate;
+    $PAGE->requires->js_call_amd('mod_kalvidassign/kalvidassign', 'init', [
+        $PAGE->context->id,
+        $entry_object ? $entry_object->id : null,
+        $entry_object ? $entry_object->name : null,
+        $entry_object ? $entry_object->thumbnailUrl : null
+    ]);
+
+    echo $renderer->display_submission_status($cm, $kalvidassign, $coursecontext);
 
     echo $renderer->display_submission($entry_object);
 
-    $local_kaltura_renderer = $PAGE->get_renderer('local_kaltura');
-    $local_mymedia_renderer = $PAGE->get_renderer('local_mymedia');
-
-    echo $local_kaltura_renderer->create_selector_modal();
-    echo $local_mymedia_renderer->render_from_template('local_mymedia/mod_progress_modal', ['back_link'=>'#']);
-    $simple_uploader = new \local_mymedia\output\simple_uploader($connection);
-    echo $local_mymedia_renderer->render_simple_upload_modal($simple_uploader);
-    echo $local_mymedia_renderer->render_webcam_upload_modal($simple_uploader);
-
-    if (empty($submission->entry_id) and empty($submission->timecreated)) {
-
-        echo $renderer->display_student_submit_buttons($cm, $disabled);
-
-    } else {
-        if ($disabled ||
-            !kalvidassign_assignment_submission_resubmit($kalvidassign, $entry_object)) {
-
+    if (!$submission) {
+        $disabled = !kalvidassign_assignment_submission_opened($kalvidassign) ||
+                    kalvidassign_assignment_submission_expired($kalvidassign) &&
+                    $kalvidassign->preventlate;
+        if (!$disabled)
+            echo $renderer->display_student_submit_buttons($cm);
+    }
+    else {
+        if (!kalvidassign_assignment_submission_resubmit($kalvidassign, $entry_object)) {
             $disabled = true;
         }
-
-        echo $renderer->display_student_resubmit_buttons($cm, $USER->id, $disabled);
-
-        // Check if the repository plug-in exists.  Add Kaltura video to
-        // the Kaltura category
+        if (!$disabled) {
+            echo $renderer->display_student_resubmit_buttons($cm, $USER->id);
+        }
         if (!empty($submission->entry_id)) {
-
             $category = false;
             $enabled = local_kaltura_kaltura_repository_enabled();
-
             if ($enabled && $connection) {
                 require_once($CFG->dirroot.'/repository/kaltura/locallib.php');
-
-                // Create the course category
                 $category = repository_kaltura_create_course_category($connection, $course->id);
             }
-
             if (!empty($category) && $enabled) {
                 repository_kaltura_add_video_course_reference($connection, $course->id, array($submission->entry_id));
             }
         }
-
     }
 
+    // Feedback
     echo $renderer->display_grade_feedback($kalvidassign, $coursecontext);
 }
 
-echo $OUTPUT->footer();
+echo $renderer->footer();

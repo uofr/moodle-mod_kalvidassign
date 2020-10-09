@@ -512,11 +512,10 @@ class mod_kalvidassign_renderer extends plugin_renderer_base {
 
         $html .= html_writer::start_tag('p');
 
-        // Tabindex -1 is required in order for the focus event to be capture amongst all browsers.
-        $attr = array('id' => 'notification',
-                      'class' => 'notification',
-                      'tabindex' => '-1');
-        $html .= html_writer::tag('div', '', $attr);
+        $selected_entry_text = $entry_obj 
+            ? get_string('selected_entry', 'local_kaltura', $entry_obj->name)
+            : get_string('no_selected_entry', 'local_kaltura');
+        $html .= html_writer::tag('h5', $selected_entry_text, ['data-region' => 'selected-entry-header']);
 
         if (!empty($entry_obj)) {
 
@@ -533,7 +532,7 @@ class mod_kalvidassign_renderer extends plugin_renderer_base {
                       'src' => $img_source,
                       'alt' => $img_name,
                       'title' => $img_name,
-                      'style' => 'z-index: -2');
+                      'style' => 'z-index: -2; max-height: 81px; max-width: 144px');
 
         $html .= html_writer::empty_tag('img', $attr);
 
@@ -932,7 +931,10 @@ function display_mod_info($kalvideoobj, $context) {
      * @param bool $disablesubmit - User can submit media to this assignment.
      * @return string - HTML markup for submit button for student.
      */
-    public function display_student_submit_buttons($cm, $disablesubmit = false) {
+    public function display_student_submit_buttons($cm) {
+        global $PAGE;
+
+        $kaltura_renderer = $PAGE->get_renderer('local_kaltura');
 
         $html = '';
 
@@ -960,22 +962,9 @@ function display_mod_info($kalvideoobj, $context) {
         $html .= html_writer::tag('button', get_string('add_select', 'mod_kalvidassign'), [
             'type' => 'button',
             'class' => 'btn btn-secondary mr-2',
-            'data-toggle' => 'modal',
-            'data-target' => '#selector_modal',
+            'data-action' => 'add-media'
         ]);
-        $html .= html_writer::tag('button', get_string('add_upload', 'mod_kalvidassign'), [
-            'type' => 'button',
-            'class' => 'btn btn-secondary mr-2',
-            'data-toggle' => 'modal',
-            'data-target' => '#simple_upload_modal',
-
-        ]);
-        $html .= html_writer::tag('button', get_string('add_record', 'mod_kalvidassign'), [
-            'type' => 'button',
-            'class' => 'btn btn-secondary mr-2',
-            'data-toggle' => 'modal',
-            'data-target' => '#webcam_upload_modal',
-        ]);
+        $html .= $kaltura_renderer->render_from_template('local_kaltura/kaltura_upload_menu', []);
         $html .= html_writer::end_div();
 
         $html .= html_writer::start_div();
@@ -1000,8 +989,10 @@ function display_mod_info($kalvideoobj, $context) {
      * @param bool $disablesubmit - User can submit media to this assignment.
      * @return string - HTML markup to display resubmit button.
      */
-    public function display_student_resubmit_buttons($cm, $userid, $disablesubmit = false) {
-        global $DB;
+    public function display_student_resubmit_buttons($cm, $userid) {
+        global $DB, $PAGE;
+
+        $kaltura_renderer = $PAGE->get_renderer('local_kaltura');
 
         $param = array('vidassignid' => $cm->instance, 'userid' => $userid);
         $submissionrec = $DB->get_record('kalvidassign_submission', $param);
@@ -1032,21 +1023,9 @@ function display_mod_info($kalvideoobj, $context) {
         $html .= html_writer::tag('button', get_string('add_select', 'mod_kalvidassign'), [
             'type' => 'button',
             'class' => 'btn btn-secondary mr-2',
-            'data-toggle' => 'modal',
-            'data-target' => '#selector_modal',
+            'data-action' => 'add-media'
         ]);
-        $html .= html_writer::tag('button', get_string('add_upload', 'mod_kalvidassign'), [
-            'type' => 'button',
-            'class' => 'btn btn-secondary mr-2',
-            'data-toggle' => 'modal',
-            'data-target' => '#simple_upload_modal',
-        ]);
-        $html .= html_writer::tag('button', get_string('add_record', 'mod_kalvidassign'), [
-            'type' => 'button',
-            'class' => 'btn btn-secondary mr-2',
-            'data-toggle' => 'modal',
-            'data-target' => '#webcam_upload_modal',
-        ]);
+        $html .= $kaltura_renderer->render_from_template('local_kaltura/kaltura_upload_menu', []);
         $html .= html_writer::end_div();
 
         $html .= html_writer::start_div();
@@ -1571,7 +1550,7 @@ function display_mod_info($kalvideoobj, $context) {
         $graded_date = $grade->dategraded;
         $graded_by   = $grade->usermodified;
 
-    /// We need the teacher info
+        // We need the teacher info
         if (!$teacher = $DB->get_record('user', array('id'=>$graded_by))) {
             print_error('cannotfindteacher');
         }

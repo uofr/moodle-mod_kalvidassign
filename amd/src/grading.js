@@ -1,36 +1,19 @@
-define(['jquery', 'core/modal_factory'], function($, ModalFactory) {
+import $ from 'jquery';
+import ModalFactory from 'core/modal_factory';
+import ModalKalturaView from 'local_kaltura/modal_kaltura_view';
 
-    var SELECTORS = {
-        VIDEO_PREVIEW_THUMB : '.media_thumbnail_cl',
-    };
+const SELECTORS = {
+    VIDEO_PREVIEW_THUMB: '.media_thumbnail_cl'
+};
 
-    var _modal = null;
+export const init = async () => {
+    const modal = await ModalFactory.create({type: ModalKalturaView.getType()});
+    registerEventListeners(modal);
+};
 
-    var _showVideoPreview = function(event) {
-        var entryId = event.target.id;
-        entryId = entryId.substr(6);
-        var video = '<div class="embed-responsive embed-responsive-item embed-responsive-16by9">';
-        video += $("#hidden_markup_" + entryId).html();
-        video += '</div>';
-        _modal.setBody(video);
-        _modal.show();
-    };
-
-    var _setModal = function(modal) {
-        _modal = modal;
-    };
-
-    var init = function() {
-        // create video preview modal
-        if (_modal === null) {
-            var videoPreviewPromise = ModalFactory.create({large: true});
-            videoPreviewPromise.then(_setModal);
-        }
-        // register event listeners
-        $(SELECTORS.VIDEO_PREVIEW_THUMB).click(_showVideoPreview);
-    };
-
-    return {
-        init : init
-    };
-});
+const registerEventListeners = (modal) => {
+    $(SELECTORS.VIDEO_PREVIEW_THUMB).on('click', (e) => {
+        const entryid = e.currentTarget.id.substr(6);
+        modal.renderEntryPlayer(entryid);
+    });
+};
