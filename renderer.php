@@ -304,6 +304,8 @@ class submissions_table extends table_sql {
                         $entry_response = \local_kaltura\kaltura_entry_manager::get_entry($client_legacy, $data->entry_id, false);
                     }
                     $entry_object = $entry_response->objects[0];
+                    $client->session->end();
+                    $client_legacy->session->end();
 
 
                     $attr['src'] = $entry_object->thumbnailUrl;

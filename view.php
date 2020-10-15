@@ -106,17 +106,17 @@ if (has_capability('mod/kalvidassign:submit', $coursecontext)) {
         if (!$disabled) {
             echo $renderer->display_student_resubmit_buttons($cm, $USER->id);
         }
-        //if (!empty($submission->entry_id)) {
-        //    $category = false;
-        //    $enabled = local_kaltura_kaltura_repository_enabled();
-        //    if ($enabled && $connection) {
-        //        require_once($CFG->dirroot.'/repository/kaltura/locallib.php');
-        //        $category = repository_kaltura_create_course_category($connection, $course->id);
-        //    }
-        //    if (!empty($category) && $enabled) {
-        //        repository_kaltura_add_video_course_reference($connection, $course->id, array($submission->entry_id));
-        //    }
-        //}
+        if (!empty($submission->entry_id)) {
+            $category = false;
+            $enabled = local_kaltura_kaltura_repository_enabled();
+            if ($enabled && $connection) {
+                require_once($CFG->dirroot.'/repository/kaltura/locallib.php');
+                $category = repository_kaltura_create_course_category($connection, $course->id);
+            }
+            if (!empty($category) && $enabled) {
+                repository_kaltura_add_video_course_reference($connection, $course->id, array($submission->entry_id));
+            }
+        }
     }
 
     // Feedback
