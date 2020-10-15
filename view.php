@@ -25,30 +25,28 @@
 require_once(dirname(dirname(dirname(__FILE__))) . '/config.php');
 require_once(dirname(dirname(dirname(__FILE__))) . '/local/kaltura/locallib.php');
 require_once(dirname(__FILE__) . '/locallib.php');
-
 $id = required_param('id', PARAM_INT); // Course Module ID.
-
 $cm = get_coursemodule_from_id('kalvidassign', $id, 0, false, MUST_EXIST);
 $course = get_course($cm->course);
 $kalvidassign = $DB->get_record('kalvidassign', ['id' => $cm->instance], '*', MUST_EXIST);
 
-require_course_login($course->id, true, $cm);
+require_login($course, false, $cm);
+
+$PAGE->set_url('/mod/kalvidassign/view.php', array('id'=>$id));
+$PAGE->set_title(format_string($kalvidassign->name));
+$PAGE->set_heading($course->fullname);
 
 $coursecontext = context_course::instance($COURSE->id);
 
 // Connect to Kaltura
-$kaltura        = new kaltura_connection();
-$connection     = $kaltura->get_connection(true, KALTURA_SESSION_LENGTH);
+$kaltura = new kaltura_connection();
+$connection = $kaltura->get_connection(true, KALTURA_SESSION_LENGTH);
 
 // Update 'viewed' state if required by completion system.
 $completion = new completion_info($course);
 $completion->set_module_viewed($cm);
 
 $renderer = $PAGE->get_renderer('mod_kalvidassign');
-
-$PAGE->set_url('/mod/kalvidassign/view.php', array('id'=>$id));
-$PAGE->set_title(format_string($kalvidassign->name));
-$PAGE->set_heading($course->fullname);
 
 echo $renderer->header();
 echo $renderer->heading($kalvidassign->name);
@@ -60,17 +58,34 @@ if (has_capability('mod/kalvidassign:gradesubmission', $coursecontext)) {
 }
 
 // Student View
-if (is_enrolled($coursecontext, $USER->id) && has_capability('mod/kalvidassign:submit', $coursecontext)) {
+if (has_capability('mod/kalvidassign:submit', $coursecontext)) {
     $submission = $DB->get_record('kalvidassign_submission', ['vidassignid' => $kalvidassign->id, 'userid' => $USER->id]);
+
+    $client = \local_kaltura\kaltura_client::get_client('kaltura');
+    $client->setKs(\local_kaltura\kaltura_session_manager::get_user_session($client));
+
+    $client_legacy = \local_kaltura\kaltura_client::get_client('ce');
+    $client_legacy->setKs(\local_kaltura\kaltura_session_manager::get_user_session_legacy($client_legacy));
+
     if (!empty($submission->entry_id)) {
-        $entry_object = local_kaltura_get_ready_entry_object($submission->entry_id, false);
+        $entry_response = \local_kaltura\kaltura_entry_manager::get_entry($client, $submission->entry_id);
+        if (!$entry_response->totalCount) {
+            $entry_response = \local_kaltura\kaltura_entry_manager::get_entry($client_legacy, $submission->entry_id);
+        }
+        $entry_object = $entry_response->objects[0];
     }
+
+    $has_ce = \local_kaltura\kaltura_entry_manager::count_entries($client_legacy) > 0;
+
+    $client->session->end();
+    $client_legacy->session->end();
 
     $PAGE->requires->js_call_amd('mod_kalvidassign/kalvidassign', 'init', [
         $PAGE->context->id,
         $entry_object ? $entry_object->id : null,
         $entry_object ? $entry_object->name : null,
-        $entry_object ? $entry_object->thumbnailUrl : null
+        $entry_object ? $entry_object->thumbnailUrl : null,
+        $has_ce
     ]);
 
     echo $renderer->display_submission_status($cm, $kalvidassign, $coursecontext);
@@ -91,17 +106,17 @@ if (is_enrolled($coursecontext, $USER->id) && has_capability('mod/kalvidassign:s
         if (!$disabled) {
             echo $renderer->display_student_resubmit_buttons($cm, $USER->id);
         }
-        if (!empty($submission->entry_id)) {
-            $category = false;
-            $enabled = local_kaltura_kaltura_repository_enabled();
-            if ($enabled && $connection) {
-                require_once($CFG->dirroot.'/repository/kaltura/locallib.php');
-                $category = repository_kaltura_create_course_category($connection, $course->id);
-            }
-            if (!empty($category) && $enabled) {
-                repository_kaltura_add_video_course_reference($connection, $course->id, array($submission->entry_id));
-            }
-        }
+        //if (!empty($submission->entry_id)) {
+        //    $category = false;
+        //    $enabled = local_kaltura_kaltura_repository_enabled();
+        //    if ($enabled && $connection) {
+        //        require_once($CFG->dirroot.'/repository/kaltura/locallib.php');
+        //        $category = repository_kaltura_create_course_category($connection, $course->id);
+        //    }
+        //    if (!empty($category) && $enabled) {
+        //        repository_kaltura_add_video_course_reference($connection, $course->id, array($submission->entry_id));
+        //    }
+        //}
     }
 
     // Feedback

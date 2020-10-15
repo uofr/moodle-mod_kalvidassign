@@ -21,7 +21,7 @@ const SELECTORS = {
     SUBMIT: '#submit_media'
 };
 
-export const init = async (contextid, entryid, entryname, entrythumbnail) => {
+export const init = async (contextid, entryid, entryname, entrythumbnail, hasCe) => {
     try {
         const [modal, uploadModal] = await Promise.all([
             ModalFactory.create({type: ModalVideoPicker.getType()}),
@@ -32,6 +32,7 @@ export const init = async (contextid, entryid, entryname, entrythumbnail) => {
         modal.selectedEntryId = entryid;
         modal.selectedEntryName = entryname;
         modal.selectedEntryThumbnail = entrythumbnail;
+        modal.hasCe = hasCe;
 
         uploadModal.contextid = contextid;
 
@@ -54,25 +55,26 @@ const registerEventListeners = (modal, uploadModal, contextid) => {
         uploadModal.show();
     });
 
-    subscribe(ModalVideoPickerEvents.entrySelected, async (entry) => {
-        $(SELECTORS.ENTRY_ID).val(entry.entryId);
-        $(SELECTORS.ENTRY_THUMBNAIL).attr('src', entry.entryThumbnail);
-        const selectedEntryText = await getString('selected_entry', 'local_kaltura', entry.entryName);
-        $(SELECTORS.SELECTED_ENTRY_HEADER).text(selectedEntryText);
-        $(SELECTORS.SUBMIT).prop('disabled', false);
+    subscribe(ModalVideoPickerEvents.entrySelected, async (data) => {
+        updateSubmission(data.entryId, data.entryName, data.entryThumbnail);
     });
 
     subscribe(KalturaEvents.uploadComplete, async (entryid) => {
         uploadModal.hide();
         const entry = await KalturaAjax.getEntry(contextid, entryid);
-        $(SELECTORS.ENTRY_ID).val(entry.id);
-        $(SELECTORS.ENTRY_THUMBNAIL).attr('src', entry.thumbnailUrl);
-        const selectedEntryText = await getString('selected_entry', 'local_kaltura', entry.name);
-        $(SELECTORS.SELECTED_ENTRY_HEADER).text(selectedEntryText);
-        $(SELECTORS.SUBMIT).prop('disabled', false);
+        updateSubmission(entry.id, entry.name, entry.thumbnailUrl);
+
         modal.selectedEntryId = entry.id;
         modal.selectedEntryName = entry.name;
         modal.selectedEntryThumbnail = entry.thumbnailUrl;
     });
 
+};
+
+const updateSubmission = async (entryid, name, thumbnailUrl) => {
+    const selectedEntryText = await getString('selected_entry', 'local_kaltura', name);
+    $(SELECTORS.ENTRY_ID).val(entryid);
+    $(SELECTORS.ENTRY_THUMBNAIL).attr('src', thumbnailUrl);
+    $(SELECTORS.SELECTED_ENTRY_HEADER).text(selectedEntryText);
+    $(SELECTORS.SUBMIT).prop('disabled', false);
 };

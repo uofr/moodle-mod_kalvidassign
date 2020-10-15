@@ -289,13 +289,23 @@ class submissions_table extends table_sql {
             if ($this->_connection) {
 
                 if (!array_key_exists($data->entry_id, $this->_entries)) {
-                    $note = get_string('grade_video_not_cache', 'kalvidassign');
-
                     /*
                      * If the entry has not yet been cached, force a call to retrieve the entry object
                      * from the Kaltura server so that the thumbnail can be displayed.
                      */
-                    $entry_object = local_kaltura_get_ready_entry_object($data->entry_id, false);
+                    $client = \local_kaltura\kaltura_client::get_client('kaltura');
+                    $client->setKs(\local_kaltura\kaltura_session_manager::get_admin_session($client));
+
+                    $client_legacy = \local_kaltura\kaltura_client::get_client('ce');
+                    $client_legacy->setKs(\local_kaltura\kaltura_session_manager::get_admin_session_legacy($client_legacy));
+
+                    $entry_response = \local_kaltura\kaltura_entry_manager::get_entry($client, $data->entry_id, false);
+                    if (!$entry_response->totalCount) {
+                        $entry_response = \local_kaltura\kaltura_entry_manager::get_entry($client_legacy, $data->entry_id, false);
+                    }
+                    $entry_object = $entry_response->objects[0];
+
+
                     $attr['src'] = $entry_object->thumbnailUrl;
                     $attr['alt'] = $entry_object->name;
                     $attr['title'] = $entry_object->name;

@@ -78,27 +78,32 @@ class kalvidassign_singlesubmission_form extends moodleform {
         $entryobject   = '';
 
         if (!empty($submission->entry_id)) {
+            $client = \local_kaltura\kaltura_client::get_client('kaltura');
+            $client->setKs(\local_kaltura\kaltura_session_manager::get_admin_session($client));
 
-            $kaltura        = new kaltura_connection();
-            $connection     = $kaltura->get_connection(true, KALTURA_SESSION_LENGTH);
+            $client_legacy = \local_kaltura\kaltura_client::get_client('ce');
+            $client_legacy->setKs(\local_kaltura\kaltura_session_manager::get_admin_session_legacy($client_legacy));
 
-            if ($connection) {
-                $entryobject = local_kaltura_get_ready_entry_object($this->_customdata->submission->entry_id);
-    
-                // Determine the type of video (See KALDEV-28)
-                if (!local_kaltura_video_type_valid($entryobject)) {
-                    $entryobject = local_kaltura_get_ready_entry_object($entryobject->id, false);
-                }
+            $entry_response = \local_kaltura\kaltura_entry_manager::get_entry($client, $submission->entry_id, false);
+            if ($entry_response->totalCount) {
+                $entryobject = $entry_response->objects[0];
+                $markup = \local_kaltura\kaltura_player::get_player($entryobject);
+            } else {
+                $entry_response = \local_kaltura\kaltura_entry_manager::get_entry($client_legacy, $submission->entry_id, false);
+                $entryobject = $entry_response->objects[0];
+                $markup = \local_kaltura\kaltura_player::get_player_legacy($entryobject);
             }
 
+            $client->session->end();
+            $client_legacy->session->end();
         }
 
         if (!empty($entryobject)) {
-            $markup = \local_kaltura\kaltura_player::get_player($entryobject);
-
             $mform->addElement('static', 'description', get_string('submission', 'kalvidassign'), $markup);
 
         } else if (empty($entryobject) && isset($submission->timemodified) && !empty($submission->timemodified)) {
+            $kaltura        = new kaltura_connection();
+            $connection     = $kaltura->get_connection(true, KALTURA_SESSION_LENGTH);
 
             if ($connection) {
                 // An empty entry object and a time modified timestamp means the video is still converting

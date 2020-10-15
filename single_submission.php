@@ -39,7 +39,6 @@ $tifirst = optional_param('tifirst', '', PARAM_TEXT);
 $tilast  = optional_param('tilast', '', PARAM_TEXT);
 $page    = optional_param('page', 0, PARAM_INT);
 
-
 list($cm, $course, $kalvidassignobj) = kalvidassign_validate_cmid($id);
 
 require_login($course->id, false, $cm);
